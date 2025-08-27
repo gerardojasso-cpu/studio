@@ -34,7 +34,7 @@ const stateConfig = {
     statusText: "Inactiva",
     statusColor: "bg-status-gray",
     statusIcon: PowerOff,
-    mainText: "Por favor, pase su tarjeta para iniciar sesión.",
+    mainText: "Dashboard de Producción - Pase su tarjeta para iniciar sesión",
     isPulsing: false,
     nextState: 'LOGGED_IN',
   },
@@ -137,7 +137,6 @@ export function Dashboard() {
 
 
   const handleStateAction = () => {
-    // Simulates the main interaction click, advancing the state machine
     if (state === 'INACTIVE') {
       setState('LOGGED_IN');
       toast({ title: "Inicio de sesión exitoso", description: "Operador: Juan Pérez" });
@@ -150,11 +149,9 @@ export function Dashboard() {
       setDowntimeStartTime(Date.now());
       setTimeout(() => setIsModalOpen(true), 500);
     } else if (state === 'AWAITING_SUPPORT') {
-        // Simulate technician arrival
         setState('REPAIR_IN_PROGRESS');
         toast({ title: "Técnico ha llegado", description: "Reparación en curso." });
     } else if (state === 'REPAIR_IN_PROGRESS') {
-        // Simulate repair finished
         setState('PENDING_OPERATOR_CONFIRMATION');
         toast({ title: "Reparación Finalizada", description: "Pendiente de confirmación del operador." });
     } else if (state === 'PENDING_OPERATOR_CONFIRMATION') {
@@ -181,7 +178,6 @@ export function Dashboard() {
     
     setIsModalOpen(false);
 
-    // Flujo de paros que puede resolver el operador
     if (reason === 'Fin de Turno') {
       setState('INACTIVE');
       toast({ title: "Fin de turno registrado", description: "Sesión cerrada." });
@@ -195,7 +191,6 @@ export function Dashboard() {
         return;
     }
     
-    // Flujo de paros que requieren a otro departamento
     let department = "Soporte";
     if (maintenanceReasons.includes(reason)) {
       department = "Mantenimiento";
@@ -253,46 +248,48 @@ export function Dashboard() {
                 </div>
                 <p className="font-semibold text-lg">{currentConfig.mainText}</p>
             </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Power className="h-5 w-5" />
-                  Control de Máquina
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="font-bold text-lg">{currentConfig.statusText}</p>
-                  <p className="text-sm text-muted-foreground">{currentConfig.mainText}</p>
-                </div>
+            {state !== 'INACTIVE' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Power className="h-5 w-5" />
+                    Control de Máquina
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="font-bold text-lg">{currentConfig.statusText}</p>
+                    <p className="text-sm text-muted-foreground">{currentConfig.mainText}</p>
+                  </div>
 
-                {state === 'LOGGED_IN' && (
-                  <Button onClick={handleStateAction} className="w-full font-bold bg-status-green hover:bg-status-green/90">
-                    <PlayCircle className="mr-2 h-5 w-5" />
-                    Iniciar Producción
-                  </Button>
-                )}
-                {state === 'RUNNING' && (
-                  <Button onClick={handleStateAction} className="w-full font-bold bg-primary hover:bg-primary/90">
-                    <Square className="mr-2 h-5 w-5" />
-                    Detener Producción
-                  </Button>
-                )}
-                 {state === 'PENDING_OPERATOR_CONFIRMATION' && (
-                  <Button onClick={handleStateAction} className="w-full font-bold bg-status-green hover:bg-status-green/90">
-                    <CheckCircle2 className="mr-2 h-5 w-5" />
-                    Confirmar Fin de Paro
-                  </Button>
-                )}
-                
-                <div className="flex justify-between text-sm">
-                  <span className="font-semibold">Seguridad:</span>
-                  <span className="flex items-center gap-1 font-semibold text-status-green">
-                    <CheckCircle2 className="h-4 w-4" /> Sistemas OK
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
+                  {state === 'LOGGED_IN' && (
+                    <Button onClick={handleStateAction} className="w-full font-bold bg-status-green hover:bg-status-green/90">
+                      <PlayCircle className="mr-2 h-5 w-5" />
+                      Iniciar Producción
+                    </Button>
+                  )}
+                  {state === 'RUNNING' && (
+                    <Button onClick={handleStateAction} className="w-full font-bold bg-primary hover:bg-primary/90">
+                      <Square className="mr-2 h-5 w-5" />
+                      Detener Producción
+                    </Button>
+                  )}
+                  {state === 'PENDING_OPERATOR_CONFIRMATION' && (
+                    <Button onClick={handleStateAction} className="w-full font-bold bg-status-green hover:bg-status-green/90">
+                      <CheckCircle2 className="mr-2 h-5 w-5" />
+                      Confirmar Fin de Paro
+                    </Button>
+                  )}
+                  
+                  <div className="flex justify-between text-sm">
+                    <span className="font-semibold">Seguridad:</span>
+                    <span className="flex items-center gap-1 font-semibold text-status-green">
+                      <CheckCircle2 className="h-4 w-4" /> Sistemas OK
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Columna Central */}
@@ -339,31 +336,23 @@ export function Dashboard() {
 
           {/* Columna Derecha */}
           <div className="lg:col-span-1 space-y-6">
-             <Card>
-                <CardHeader>
-                  <CardTitle>Estado de Máquina</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-40 w-full bg-gray-200 rounded-md flex items-center justify-center">
-                    <p>Donut Chart</p>
-                  </div>
-                </CardContent>
-             </Card>
              <DowntimeChart data={downtimeData} />
           </div>
         </div>
       </main>
       
-      <footer className="flex items-center justify-end gap-4 p-4 bg-white border-t">
-        <Button variant="outline" className="font-bold">
-            <BarChart className="mr-2 h-5 w-5" />
-            Análisis de Paros
-        </Button>
-        <Button className="font-bold bg-gray-700 hover:bg-gray-800 text-white">
-            <History className="mr-2 h-5 w-5" />
-            Historial y Tendencias
-        </Button>
-      </footer>
+      {state !== 'INACTIVE' && (
+        <footer className="flex items-center justify-end gap-4 p-4 bg-white border-t">
+          <Button variant="outline" className="font-bold">
+              <BarChart className="mr-2 h-5 w-5" />
+              Análisis de Paros
+          </Button>
+          <Button className="font-bold bg-gray-700 hover:bg-gray-800 text-white">
+              <History className="mr-2 h-5 w-5" />
+              Historial y Tendencias
+          </Button>
+        </footer>
+      )}
     </>
   );
 }
