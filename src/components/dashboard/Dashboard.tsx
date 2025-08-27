@@ -234,11 +234,11 @@ export function Dashboard() {
           <div className="lg:col-span-1">
             <Card className="mb-6 flex flex-col items-center justify-center text-center h-52 cursor-pointer hover:bg-slate-50 transition-colors" onClick={handleStateAction}>
                 <div className={cn(
-                    "flex h-24 w-24 items-center justify-center rounded-full mb-4 transition-colors", 
+                    "flex h-32 w-32 items-center justify-center rounded-full mb-4 transition-colors", 
                     currentConfig.statusColor,
                     currentConfig.isPulsing && 'soft-pulse'
                   )}>
-                    <currentConfig.statusIcon className="h-12 w-12 text-white" />
+                    <currentConfig.statusIcon className="h-16 w-16 text-white" />
                 </div>
                 <p className="font-semibold text-lg">{currentConfig.mainText}</p>
             </Card>
