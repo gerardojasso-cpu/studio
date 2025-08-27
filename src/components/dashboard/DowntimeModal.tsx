@@ -82,8 +82,9 @@ export function DowntimeModal({ isOpen, onRegister, onClose }: DowntimeModalProp
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      resetModal();
-      onClose();
+      // Do not close if a reason is not selected.
+      // The modal should only be closed programatically after a reason is registered
+      // or by an explicit cancel action if we add one.
     }
   }
 
