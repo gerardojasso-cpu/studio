@@ -1,3 +1,5 @@
+"use client";
+
 import type { ElementType } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -21,7 +23,7 @@ export function StatusWidget({ status, subtext, color, Icon, isPulsing, onClick,
       <CardContent className="flex flex-col items-center justify-center p-0 w-full h-full">
         <div 
           className={cn(
-            "relative flex items-center justify-center w-full h-full rounded-full transition-all duration-500 shadow-lg border-8 border-card", 
+            "relative flex items-center justify-center w-full h-full rounded-full transition-all duration-500 shadow-lg", 
             color,
             isPulsing && "animate-pulse"
           )}
