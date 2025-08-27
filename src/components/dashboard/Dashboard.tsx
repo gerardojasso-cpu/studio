@@ -93,6 +93,9 @@ const initialDowntimeData = [
     { reason: "Falta Material", time: 1.5 },
 ];
 
+const maintenanceReasons: DowntimeReason[] = ['Problema Mecánico', 'Problema Eléctrico', 'Mantenimiento Preventivo', 'Falla de Neumática/Hidráulica'];
+const operationReasons: DowntimeReason[] = ['Limpieza', 'Descanso de Operador', 'Ajuste de la Máquina', 'Fin de Turno', 'Hora de Comida'];
+
 export function Dashboard() {
   const [state, setState] = useState<MachineState>('INACTIVE');
   const [kpis, setKpis] = useState({ 
@@ -112,7 +115,7 @@ export function Dashboard() {
   const totalDowntime = downtimeData.reduce((acc, curr) => acc + curr.time, 0);
 
   useEffect(() => {
-    let simulationInterval: NodeJS.Timeout;
+    let simulationInterval: NodeJS.Timeout | undefined;
 
     if (state === 'RUNNING') {
       simulationInterval = setInterval(() => {
@@ -184,20 +187,21 @@ export function Dashboard() {
       toast({ title: "Fin de turno registrado", description: "Sesión cerrada." });
       return;
     }
-    if (reason === 'Hora de Comida' || reason === 'Limpieza' || reason === 'Descanso de Operador' || reason === 'Ajuste de la Máquina') {
+    if (operationReasons.includes(reason) && reason !== 'Fin de Turno') {
         setState('LOGGED_IN'); 
         setDowntimeStartTime(null);
         toast({ title: `Paro por "${reason}" registrado.`, description: "La máquina está en pausa. Confirme para reiniciar." });
-        // En un caso real, podría ir a un estado intermedio, pero para el prototipo lo regresamos a LOGGED_IN.
-        // O podríamos llevarlo a PENDING_OPERATOR_CONFIRMATION para que el operador confirme que terminó su descanso/limpieza.
-        // Vamos a usar PENDING_OPERATOR_CONFIRMATION para mantener la consistencia del flujo.
         setState('PENDING_OPERATOR_CONFIRMATION');
         return;
     }
     
     // Flujo de paros que requieren a otro departamento
+    let department = "Soporte";
+    if (maintenanceReasons.includes(reason)) {
+      department = "Mantenimiento";
+    }
     setState('AWAITING_SUPPORT');
-    toast({ title: "Paro Registrado", description: `Motivo: ${reason}. Se ha notificado a soporte.` });
+    toast({ title: "Paro Registrado", description: `Motivo: ${reason}. Se ha notificado a ${department}.` });
   };
     
   const handleLogout = () => {
@@ -206,31 +210,13 @@ export function Dashboard() {
     setIsModalOpen(false);
     toast({ title: "Sesión Cerrada" });
   };
-  
-  const downtimeReasons: DowntimeReason[] = [
-      'Problema Mecánico', 
-      'Problema Eléctrico', 
-      'Mantenimiento Preventivo', 
-      'Falla de Neumática/Hidráulica',
-      'Falla en la Etiqueta',
-      'Ajuste de Calidad',
-      'Inspección',
-      'Falta de Rollo de Producción',
-      'Falta de Rollo de Sacrificio',
-      'Problema con el Material',
-      'Limpieza',
-      'Descanso de Operador',
-      'Ajuste de la Máquina',
-      'Fin de Turno', 
-      'Hora de Comida'
-    ];
 
   return (
     <>
       <DowntimeModal
         isOpen={isModalOpen}
         onRegister={handleRegisterDowntime}
-        downtimeReasons={downtimeReasons}
+        onClose={() => setIsModalOpen(false)}
       />
       
       <header className="flex h-20 items-center justify-between bg-[#1f2937] px-6 text-white">
@@ -263,7 +249,7 @@ export function Dashboard() {
                     currentConfig.statusColor,
                     currentConfig.isPulsing && 'soft-pulse'
                   )}>
-                    <currentConfig.statusIcon className="h-16 w-16 text-white" />
+                    <currentConfig.statusIcon className="h-24 w-24 text-white" />
                 </div>
                 <p className="font-semibold text-lg">{currentConfig.mainText}</p>
             </Card>
@@ -381,5 +367,3 @@ export function Dashboard() {
     </>
   );
 }
-
-    

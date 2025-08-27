@@ -10,16 +10,8 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  SelectGroup,
-  SelectLabel
-} from "@/components/ui/select";
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Wrench, Package, Search, User, ArrowLeft } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export type DowntimeReason = 
   // Mantenimiento
@@ -42,80 +34,126 @@ export type DowntimeReason =
   'Fin de Turno' | 
   'Hora de Comida';
 
+type Category = 'Mantenimiento' | 'Calidad' | 'Suministros' | 'Operación';
+
 interface DowntimeModalProps {
   isOpen: boolean;
   onRegister: (reason: DowntimeReason) => void;
-  downtimeReasons: DowntimeReason[];
+  onClose: () => void;
 }
 
-export function DowntimeModal({ isOpen, onRegister }: DowntimeModalProps) {
-  const [selectedReason, setSelectedReason] = useState<DowntimeReason | null>(null);
+const reasonCategories: Record<Category, DowntimeReason[]> = {
+  'Mantenimiento': ['Problema Mecánico', 'Problema Eléctrico', 'Mantenimiento Preventivo', 'Falla de Neumática/Hidráulica'],
+  'Calidad': ['Falla en la Etiqueta', 'Ajuste de Calidad', 'Inspección'],
+  'Suministros': ['Falta de Rollo de Producción', 'Falta de Rollo de Sacrificio', 'Problema con el Material'],
+  'Operación': ['Limpieza', 'Descanso de Operador', 'Ajuste de la Máquina', 'Fin de Turno', 'Hora de Comida'],
+};
 
-  const handleRegisterClick = () => {
-    if (selectedReason) {
-      onRegister(selectedReason);
-      setSelectedReason(null);
-    }
+const categoryIcons: Record<Category, React.ElementType> = {
+    'Mantenimiento': Wrench,
+    'Suministros': Package,
+    'Calidad': Search,
+    'Operación': User,
+}
+
+export function DowntimeModal({ isOpen, onRegister, onClose }: DowntimeModalProps) {
+  const [selectionStep, setSelectionStep] = useState<'category' | 'reason'>('category');
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+
+  const handleCategorySelect = (category: Category) => {
+    setSelectedCategory(category);
+    setSelectionStep('reason');
   };
 
-  const maintenanceReasons: DowntimeReason[] = ['Problema Mecánico', 'Problema Eléctrico', 'Mantenimiento Preventivo', 'Falla de Neumática/Hidráulica'];
-  const qualityReasons: DowntimeReason[] = ['Falla en la Etiqueta', 'Ajuste de Calidad', 'Inspección'];
-  const supplyReasons: DowntimeReason[] = ['Falta de Rollo de Producción', 'Falta de Rollo de Sacrificio', 'Problema con el Material'];
-  const operationReasons: DowntimeReason[] = ['Limpieza', 'Descanso de Operador', 'Ajuste de la Máquina', 'Fin de Turno', 'Hora de Comida'];
+  const handleReasonSelect = (reason: DowntimeReason) => {
+    onRegister(reason);
+    resetModal();
+  };
+  
+  const resetModal = () => {
+    setSelectionStep('category');
+    setSelectedCategory(null);
+  };
 
+  const handleBack = () => {
+    setSelectionStep('category');
+    setSelectedCategory(null);
+  }
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      resetModal();
+      onClose();
+    }
+  }
 
   return (
-    <Dialog open={isOpen}>
-      <DialogContent className="sm:max-w-2xl bg-card border-border text-card-foreground p-8" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-4xl bg-card border-border text-card-foreground p-8" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
         <DialogHeader>
           <div className="flex items-center justify-center flex-col text-center">
             <div className="bg-destructive/10 p-4 rounded-full mb-6">
               <AlertTriangle className="h-16 w-16 text-destructive" />
             </div>
             <DialogTitle className="text-4xl font-bold">Registrar Motivo de Paro</DialogTitle>
-            <DialogDescription className="mt-4 text-xl text-muted-foreground">
-              Seleccione la causa del paro para notificar al equipo correspondiente. La máquina no podrá reiniciarse hasta que se registre el motivo.
+             <DialogDescription className="mt-4 text-xl text-muted-foreground">
+              {selectionStep === 'category'
+                ? 'Seleccione el departamento responsable para notificar al equipo correcto.'
+                : `Seleccione la causa específica para: ${selectedCategory}`}
             </DialogDescription>
           </div>
         </DialogHeader>
-        <div className="py-8">
-          <Select onValueChange={(value: DowntimeReason) => setSelectedReason(value)}>
-            <SelectTrigger className="w-full h-16 text-2xl bg-input border-border focus:ring-ring">
-              <SelectValue placeholder="Seleccionar un motivo..." />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectGroup>
-                  <SelectLabel className="text-lg">Mantenimiento</SelectLabel>
-                  {maintenanceReasons.map(reason => <SelectItem key={reason} value={reason} className="text-2xl py-3">{reason}</SelectItem>)}
-                </SelectGroup>
-                <SelectGroup>
-                  <SelectLabel className="text-lg">Calidad</SelectLabel>
-                  {qualityReasons.map(reason => <SelectItem key={reason} value={reason} className="text-2xl py-3">{reason}</SelectItem>)}
-                </SelectGroup>
-                <SelectGroup>
-                  <SelectLabel className="text-lg">Suministros</SelectLabel>
-                  {supplyReasons.map(reason => <SelectItem key={reason} value={reason} className="text-2xl py-3">{reason}</SelectItem>)}
-                </SelectGroup>
-                <SelectGroup>
-                  <SelectLabel className="text-lg">Operación</SelectLabel>
-                  {operationReasons.map(reason => <SelectItem key={reason} value={reason} className="text-2xl py-3">{reason}</SelectItem>)}
-                </SelectGroup>
-            </SelectContent>
-          </Select>
+        
+        <div className="py-8 min-h-[250px]">
+          {selectionStep === 'category' && (
+            <div className="grid grid-cols-2 gap-6">
+              {(Object.keys(reasonCategories) as Category[]).map(category => {
+                const Icon = categoryIcons[category];
+                return (
+                  <Button
+                    key={category}
+                    onClick={() => handleCategorySelect(category)}
+                    className="h-32 text-2xl font-bold flex flex-col gap-2"
+                    variant="outline"
+                  >
+                    <Icon className="h-10 w-10" />
+                    {category}
+                  </Button>
+                )
+              })}
+            </div>
+          )}
+
+          {selectionStep === 'reason' && selectedCategory && (
+            <div className="grid grid-cols-2 gap-4">
+              {reasonCategories[selectedCategory].map(reason => (
+                <Button
+                  key={reason}
+                  onClick={() => handleReasonSelect(reason)}
+                  className="h-20 text-xl"
+                  variant="outline"
+                >
+                  {reason}
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
+
         <DialogFooter>
-          <Button
-            type="button"
-            onClick={handleRegisterClick}
-            disabled={!selectedReason}
-            className="w-full h-16 text-2xl font-bold"
-          >
-            Registrar Paro
-          </Button>
+          {selectionStep === 'reason' && (
+            <Button
+              type="button"
+              onClick={handleBack}
+              className="absolute top-8 left-8 h-12 text-lg"
+              variant="ghost"
+            >
+              <ArrowLeft className="mr-2 h-5 w-5" />
+              Atrás
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-
-    
