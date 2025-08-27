@@ -178,17 +178,26 @@ export function Dashboard() {
     
     setIsModalOpen(false);
 
+    // Flujo de paros que puede resolver el operador
     if (reason === 'Fin de Turno') {
       setState('INACTIVE');
       toast({ title: "Fin de turno registrado", description: "Sesión cerrada." });
-    } else if (reason === 'Hora de Comida') {
-      setState('LOGGED_IN'); 
-      setDowntimeStartTime(null);
-      toast({ title: "Paro por comida registrado.", description: "La máquina está en pausa." });
-    } else {
-      setState('AWAITING_SUPPORT');
-      toast({ title: "Paro Registrado", description: `Motivo: ${reason}. Se ha notificado a soporte.` });
+      return;
     }
+    if (reason === 'Hora de Comida' || reason === 'Limpieza' || reason === 'Descanso de Operador' || reason === 'Ajuste de la Máquina') {
+        setState('LOGGED_IN'); 
+        setDowntimeStartTime(null);
+        toast({ title: `Paro por "${reason}" registrado.`, description: "La máquina está en pausa. Confirme para reiniciar." });
+        // En un caso real, podría ir a un estado intermedio, pero para el prototipo lo regresamos a LOGGED_IN.
+        // O podríamos llevarlo a PENDING_OPERATOR_CONFIRMATION para que el operador confirme que terminó su descanso/limpieza.
+        // Vamos a usar PENDING_OPERATOR_CONFIRMATION para mantener la consistencia del flujo.
+        setState('PENDING_OPERATOR_CONFIRMATION');
+        return;
+    }
+    
+    // Flujo de paros que requieren a otro departamento
+    setState('AWAITING_SUPPORT');
+    toast({ title: "Paro Registrado", description: `Motivo: ${reason}. Se ha notificado a soporte.` });
   };
     
   const handleLogout = () => {
@@ -198,7 +207,23 @@ export function Dashboard() {
     toast({ title: "Sesión Cerrada" });
   };
   
-  const downtimeReasons: DowntimeReason[] = ['Falta de Material', 'Mantenimiento', 'Mecánico', 'Eléctrico', 'Calidad', 'Ajuste', 'Fin de Turno', 'Hora de Comida'];
+  const downtimeReasons: DowntimeReason[] = [
+      'Problema Mecánico', 
+      'Problema Eléctrico', 
+      'Mantenimiento Preventivo', 
+      'Falla de Neumática/Hidráulica',
+      'Falla en la Etiqueta',
+      'Ajuste de Calidad',
+      'Inspección',
+      'Falta de Rollo de Producción',
+      'Falta de Rollo de Sacrificio',
+      'Problema con el Material',
+      'Limpieza',
+      'Descanso de Operador',
+      'Ajuste de la Máquina',
+      'Fin de Turno', 
+      'Hora de Comida'
+    ];
 
   return (
     <>
@@ -356,3 +381,5 @@ export function Dashboard() {
     </>
   );
 }
+
+    

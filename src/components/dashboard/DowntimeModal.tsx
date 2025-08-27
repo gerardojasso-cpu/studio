@@ -16,10 +16,31 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel
 } from "@/components/ui/select";
 import { AlertTriangle } from 'lucide-react';
 
-export type DowntimeReason = 'Falta de Material' | 'Mantenimiento' | 'Mecánico' | 'Eléctrico' | 'Calidad' | 'Ajuste' | 'Fin de Turno' | 'Hora de Comida';
+export type DowntimeReason = 
+  // Mantenimiento
+  'Problema Mecánico' | 
+  'Problema Eléctrico' | 
+  'Mantenimiento Preventivo' | 
+  'Falla de Neumática/Hidráulica' |
+  // Calidad
+  'Falla en la Etiqueta' |
+  'Ajuste de Calidad' |
+  'Inspección' |
+  // Suministros
+  'Falta de Rollo de Producción' |
+  'Falta de Rollo de Sacrificio' |
+  'Problema con el Material' |
+  // Operación
+  'Limpieza' |
+  'Descanso de Operador' |
+  'Ajuste de la Máquina' |
+  'Fin de Turno' | 
+  'Hora de Comida';
 
 interface DowntimeModalProps {
   isOpen: boolean;
@@ -27,7 +48,7 @@ interface DowntimeModalProps {
   downtimeReasons: DowntimeReason[];
 }
 
-export function DowntimeModal({ isOpen, onRegister, downtimeReasons }: DowntimeModalProps) {
+export function DowntimeModal({ isOpen, onRegister }: DowntimeModalProps) {
   const [selectedReason, setSelectedReason] = useState<DowntimeReason | null>(null);
 
   const handleRegisterClick = () => {
@@ -36,6 +57,12 @@ export function DowntimeModal({ isOpen, onRegister, downtimeReasons }: DowntimeM
       setSelectedReason(null);
     }
   };
+
+  const maintenanceReasons: DowntimeReason[] = ['Problema Mecánico', 'Problema Eléctrico', 'Mantenimiento Preventivo', 'Falla de Neumática/Hidráulica'];
+  const qualityReasons: DowntimeReason[] = ['Falla en la Etiqueta', 'Ajuste de Calidad', 'Inspección'];
+  const supplyReasons: DowntimeReason[] = ['Falta de Rollo de Producción', 'Falta de Rollo de Sacrificio', 'Problema con el Material'];
+  const operationReasons: DowntimeReason[] = ['Limpieza', 'Descanso de Operador', 'Ajuste de la Máquina', 'Fin de Turno', 'Hora de Comida'];
+
 
   return (
     <Dialog open={isOpen}>
@@ -57,11 +84,22 @@ export function DowntimeModal({ isOpen, onRegister, downtimeReasons }: DowntimeM
               <SelectValue placeholder="Seleccionar un motivo..." />
             </SelectTrigger>
             <SelectContent>
-              {downtimeReasons.map(reason => (
-                <SelectItem key={reason} value={reason} className="text-2xl py-3">
-                  {reason}
-                </SelectItem>
-              ))}
+                <SelectGroup>
+                  <SelectLabel className="text-lg">Mantenimiento</SelectLabel>
+                  {maintenanceReasons.map(reason => <SelectItem key={reason} value={reason} className="text-2xl py-3">{reason}</SelectItem>)}
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel className="text-lg">Calidad</SelectLabel>
+                  {qualityReasons.map(reason => <SelectItem key={reason} value={reason} className="text-2xl py-3">{reason}</SelectItem>)}
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel className="text-lg">Suministros</SelectLabel>
+                  {supplyReasons.map(reason => <SelectItem key={reason} value={reason} className="text-2xl py-3">{reason}</SelectItem>)}
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel className="text-lg">Operación</SelectLabel>
+                  {operationReasons.map(reason => <SelectItem key={reason} value={reason} className="text-2xl py-3">{reason}</SelectItem>)}
+                </SelectGroup>
             </SelectContent>
           </Select>
         </div>
@@ -79,3 +117,5 @@ export function DowntimeModal({ isOpen, onRegister, downtimeReasons }: DowntimeM
     </Dialog>
   );
 }
+
+    
