@@ -111,6 +111,28 @@ export function Dashboard() {
 
   const totalDowntime = downtimeData.reduce((acc, curr) => acc + curr.time, 0);
 
+  useEffect(() => {
+    let simulationInterval: NodeJS.Timeout;
+
+    if (state === 'RUNNING') {
+      simulationInterval = setInterval(() => {
+        setKpis(prevKpis => ({
+          processedRolls: prevKpis.processedRolls + 1,
+          efficiency: parseFloat((92 + Math.random() * 2 - 1).toFixed(1)),
+          sacrificeLabelsUsed: prevKpis.sacrificeLabelsUsed + (Math.random() > 0.9 ? 1 : 0),
+          badLabelsPercentage: parseFloat(Math.max(0, (prevKpis.badLabelsPercentage + (Math.random() * 0.2 - 0.1))).toFixed(1)),
+        }));
+      }, 3000); // Update every 3 seconds
+    }
+
+    return () => {
+      if (simulationInterval) {
+        clearInterval(simulationInterval);
+      }
+    };
+  }, [state]);
+
+
   const handleStateAction = () => {
     // Simulates the main interaction click, advancing the state machine
     if (state === 'INACTIVE') {
