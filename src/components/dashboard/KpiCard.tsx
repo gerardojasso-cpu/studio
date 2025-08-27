@@ -15,17 +15,14 @@ export function KpiCard({ title, value, description, progress, icon: Icon }: Kpi
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <CardTitle className="text-base font-medium">{title}</CardTitle>
+        <Icon className="h-5 w-5 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <div className="text-5xl font-bold">{value}</div>
+        <div className="text-5xl font-extrabold" style={{fontSize: '3.5rem'}}>{value}</div>
         <p className="text-xs text-muted-foreground">{description}</p>
-        <div className="flex items-center gap-2 mt-4">
+        <div className="mt-4">
           <Progress value={progress} className="h-2" />
-          <span className="text-xs font-semibold text-emerald-500 flex items-center">
-            <TrendingUp className="h-3 w-3 mr-1" /> +{progress}%
-          </span>
         </div>
       </CardContent>
     </Card>

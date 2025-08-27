@@ -13,7 +13,11 @@ import {
   Clock,
   TrendingUp,
   Square,
-  Wrench
+  Wrench,
+  Package,
+  Timer,
+  Archive,
+  BadgePercent
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -91,7 +95,12 @@ const initialDowntimeData = [
 
 export function Dashboard() {
   const [state, setState] = useState<MachineState>('INACTIVE');
-  const [kpis, setKpis] = useState({ finishedLabels: 0, labelsPerHour: 0, efficiency: 0 });
+  const [kpis, setKpis] = useState({ 
+    processedRolls: 25, 
+    efficiency: 92, 
+    sacrificeLabelsUsed: 12, 
+    badLabelsPercentage: 2 
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [downtimeData, setDowntimeData] = useState(initialDowntimeData);
   const [downtimeStartTime, setDowntimeStartTime] = useState<number | null>(null);
@@ -99,6 +108,8 @@ export function Dashboard() {
   const { toast } = useToast();
   
   const currentConfig = stateConfig[state];
+
+  const totalDowntime = downtimeData.reduce((acc, curr) => acc + curr.time, 0);
 
   const handleStateAction = () => {
     // Simulates the main interaction click, advancing the state machine
@@ -250,31 +261,46 @@ export function Dashboard() {
           </div>
 
           {/* Columna Central */}
-          <div className="lg:col-span-2 space-y-6">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <KpiCard 
-                  title="Etiquetas Producidas"
-                  value={kpis.finishedLabels.toLocaleString()}
-                  description="Total del turno actual"
-                  progress={12}
-                  icon={Zap}
-                />
-                <KpiCard 
-                  title="Etiquetas por Hora"
-                  value={kpis.labelsPerHour.toLocaleString()}
-                  description="Velocidad actual"
-                  progress={8}
-                  icon={Clock}
-                />
-             </div>
-             <KpiCard 
-                title="Eficiencia"
-                value={`${kpis.efficiency}%`}
-                description="Rendimiento general"
-                progress={3}
-                icon={TrendingUp}
+          <div className="lg:col-span-2 grid grid-cols-2 grid-rows-2 gap-6">
+            <KpiCard
+              title="Producción del Turno"
+              value={kpis.processedRolls.toLocaleString()}
+              description="Total de rollos procesados"
+              progress={kpis.processedRolls / 100 * 100}
+              icon={Package}
+            />
+            <KpiCard
+              title="Eficiencia (Rendimiento)"
+              value={`${kpis.efficiency}%`}
+              description="Rendimiento general del turno"
+              progress={kpis.efficiency}
+              icon={TrendingUp}
+            />
+            <KpiCard
+              title="Tiempo de Paro Total"
+              value={`${totalDowntime} min`}
+              description="Tiempo acumulado de paros"
+              progress={(totalDowntime / 480) * 100} // Assuming 8-hour shift
+              icon={Timer}
+            />
+            <KpiCard
+              title="Etiquetas de Sacrificio"
+              value={kpis.sacrificeLabelsUsed.toLocaleString()}
+              description="Etiquetas usadas para corrección"
+              progress={kpis.sacrificeLabelsUsed / 100 * 100}
+              icon={Archive}
+            />
+            <div className="col-span-2">
+              <KpiCard
+                title="Porcentaje de Etiquetas Malas"
+                value={`${kpis.badLabelsPercentage}%`}
+                description="Etiquetas defectuosas detectadas"
+                progress={kpis.badLabelsPercentage}
+                icon={BadgePercent}
               />
+            </div>
           </div>
+
 
           {/* Columna Derecha */}
           <div className="lg:col-span-1 space-y-6">
