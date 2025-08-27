@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { AlertTriangle } from 'lucide-react';
 
-export type DowntimeReason = 'Falta de Material' | 'Mantenimiento' | 'Eléctrico' | 'Calidad' | 'Ajuste' | 'Fin de Turno' | 'Hora de Comida';
+export type DowntimeReason = 'Falta de Material' | 'Mantenimiento' | 'Mecánico' | 'Eléctrico' | 'Calidad' | 'Ajuste' | 'Fin de Turno' | 'Hora de Comida';
 
 interface DowntimeModalProps {
   isOpen: boolean;
@@ -79,3 +79,5 @@ export function DowntimeModal({ isOpen, onRegister, downtimeReasons }: DowntimeM
     </Dialog>
   );
 }
+
+    

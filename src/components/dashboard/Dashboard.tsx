@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CreditCard, CheckCircle2, AlertTriangle, PlayCircle, LogOut, Square, Power } from "lucide-react";
+import { CreditCard, CheckCircle2, AlertTriangle, PlayCircle, LogOut, Square, Power, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusWidget } from "./StatusWidget";
 import { KpiCard } from "./KpiCard";
@@ -9,12 +9,12 @@ import { DowntimeChart, type DowntimeData } from "./DowntimeChart";
 import { DowntimeModal, type DowntimeReason } from "./DowntimeModal";
 import { useToast } from "@/hooks/use-toast";
 
-type MachineState = 'INACTIVE' | 'LOGGED_IN' | 'RUNNING' | 'STOPPED';
+type MachineState = 'INACTIVE' | 'LOGGED_IN' | 'RUNNING' | 'STOPPED' | 'AWAITING_CONFIRMATION';
 
 const stateConfig = {
   INACTIVE: {
     status: "Inactiva",
-    subtext: "Sin Operador - Pase su tarjeta para iniciar sesión",
+    subtext: "Pase su tarjeta para iniciar sesión",
     color: "bg-status-gray",
     textColor: "text-white",
     Icon: CreditCard,
@@ -43,6 +43,14 @@ const stateConfig = {
     textColor: "text-white",
     Icon: AlertTriangle,
     isPulsing: true,
+  },
+  AWAITING_CONFIRMATION: {
+    status: "Parada",
+    subtext: "Esperando confirmación de fin de paro.",
+    color: "bg-destructive",
+    textColor: "text-white",
+    Icon: Wrench,
+    isPulsing: false,
   },
 };
 
@@ -125,26 +133,25 @@ export function Dashboard() {
       setDowntimeStartTime(null);
       toast({ title: "Paro por comida registrado.", description: "La máquina está en pausa. Reinicie cuando termine." });
     } else {
-      setState('LOGGED_IN');
-      toast({ title: "Paro Registrado", description: `Motivo: ${reason}.` });
+      setState('AWAITING_CONFIRMATION');
+      toast({ title: "Paro Registrado", description: `Motivo: ${reason}. Confirme cuando el problema esté resuelto.` });
     }
   };
-  
-  const handleRestartProductionFromStop = () => {
-    setState('RUNNING');
-    setIsModalOpen(false);
-    setDowntimeStartTime(null);
-    toast({ title: "Producción Reiniciada", description: "La máquina ha vuelto a funcionar." });
-  };
-  
+    
   const handleLogout = () => {
     setState('INACTIVE');
     setDowntimeStartTime(null);
     setIsModalOpen(false);
     toast({ title: "Sesión Cerrada", description: "Vuelva a pasar su tarjeta para iniciar." });
   };
+
+  const handleEndDowntimeConfirmation = () => {
+    setState('LOGGED_IN');
+    setDowntimeStartTime(null);
+    toast({ title: "Fin de Paro Confirmado", description: "La máquina está lista para reiniciar producción." });
+  };
   
-  const downtimeReasons: DowntimeReason[] = ['Falta de Material', 'Mantenimiento', 'Eléctrico', 'Calidad', 'Ajuste', 'Fin de Turno', 'Hora de Comida'];
+  const downtimeReasons: DowntimeReason[] = ['Falta de Material', 'Mantenimiento', 'Mecánico', 'Eléctrico', 'Calidad', 'Ajuste', 'Fin de Turno', 'Hora de Comida'];
 
   const currentConfig = stateConfig[state];
 
@@ -161,7 +168,7 @@ export function Dashboard() {
         {state !== 'INACTIVE' && (
           <div className="flex items-center gap-4">
             <span className="text-xl font-medium text-muted-foreground">{currentConfig.subtext}</span>
-            <Button variant="outline" size="sm" onClick={handleLogout} className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleLogout} className="flex items-center gap-2 bg-card text-card-foreground">
               <LogOut className="h-4 w-4" />
               Cerrar Sesión
             </Button>
@@ -190,11 +197,11 @@ export function Dashboard() {
         </div>
       </main>
       
-      <footer className="w-full max-w-7xl">
+      <footer className="w-full max-w-7xl h-24">
          {state === 'LOGGED_IN' && (
             <Button 
                 onClick={handleStartProduction}
-                className="w-full h-24 text-4xl font-bold bg-status-green hover:bg-status-green/90 text-white shadow-lg"
+                className="w-full h-full text-4xl font-bold bg-status-green hover:bg-status-green/90 text-white shadow-lg"
             >
                 <PlayCircle className="mr-4 h-12 w-12" />
                 Iniciar Producción
@@ -204,22 +211,24 @@ export function Dashboard() {
             <Button 
                 onClick={handleStopProduction}
                 variant="destructive"
-                className="w-full h-24 text-4xl font-bold shadow-lg"
+                className="w-full h-full text-4xl font-bold shadow-lg"
             >
                 <Square className="mr-4 h-12 w-12" />
                 Detener Producción
             </Button>
          )}
-          {state === 'STOPPED' && (
-             <Button 
-                 onClick={handleRestartProductionFromStop}
-                 className="w-full h-24 text-4xl font-bold bg-status-green hover:bg-status-green/90 text-white shadow-lg"
-             >
-                 <PlayCircle className="mr-4 h-12 w-12" />
-                 Reiniciar Producción
-             </Button>
-          )}
+         {state === 'AWAITING_CONFIRMATION' && (
+            <Button
+              onClick={handleEndDowntimeConfirmation}
+              className="w-full h-full text-4xl font-bold bg-status-yellow hover:bg-status-yellow/90 text-foreground shadow-lg"
+            >
+              <CheckCircle2 className="mr-4 h-12 w-12" />
+              Confirmar Fin de Paro
+            </Button>
+         )}
       </footer>
     </div>
   );
 }
+
+    
