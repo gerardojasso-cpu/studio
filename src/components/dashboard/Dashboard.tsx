@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CreditCard, CheckCircle2, AlertTriangle, PlayCircle, LogOut } from "lucide-react";
+import { CreditCard, CheckCircle2, AlertTriangle, PlayCircle, LogOut, Square, Power } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusWidget } from "./StatusWidget";
 import { KpiCard } from "./KpiCard";
@@ -9,7 +9,7 @@ import { DowntimeChart, type DowntimeData } from "./DowntimeChart";
 import { DowntimeModal, type DowntimeReason } from "./DowntimeModal";
 import { useToast } from "@/hooks/use-toast";
 
-type MachineState = 'INACTIVE' | 'RUNNING' | 'STOPPED';
+type MachineState = 'INACTIVE' | 'LOGGED_IN' | 'RUNNING' | 'STOPPED';
 
 const stateConfig = {
   INACTIVE: {
@@ -19,6 +19,14 @@ const stateConfig = {
     textColor: "text-white",
     Icon: CreditCard,
     isPulsing: false,
+  },
+  LOGGED_IN: {
+    status: "Lista para Iniciar",
+    subtext: "Operador: Juan Pérez",
+    color: "bg-status-yellow",
+    textColor: "text-foreground",
+    Icon: Power,
+    isPulsing: true,
   },
   RUNNING: {
     status: "Funcionando",
@@ -73,17 +81,23 @@ export function Dashboard() {
       if (kpiInterval) clearInterval(kpiInterval);
     };
   }, [state]);
-  
-  const handleWidgetClick = () => {
-    if (state === 'INACTIVE') {
-      setState('RUNNING');
-      toast({ title: "Inicio de sesión exitoso", description: "Operador: Juan Pérez" });
-    } else if (state === 'RUNNING') {
-      setState('STOPPED');
-      setDowntimeStartTime(Date.now());
-      setTimeout(() => setIsModalOpen(true), 500);
-    }
+
+  const handleLogin = () => {
+    setState('LOGGED_IN');
+    toast({ title: "Inicio de sesión exitoso", description: "Operador: Juan Pérez" });
   };
+  
+  const handleStartProduction = () => {
+    setState('RUNNING');
+    setDowntimeStartTime(null);
+    toast({ title: "Producción Iniciada", description: "La máquina ha comenzado a funcionar." });
+  };
+  
+  const handleStopProduction = () => {
+    setState('STOPPED');
+    setDowntimeStartTime(Date.now());
+    setTimeout(() => setIsModalOpen(true), 500);
+  }
   
   const handleRegisterDowntime = (reason: DowntimeReason) => {
     if (downtimeStartTime) {
@@ -96,27 +110,27 @@ export function Dashboard() {
           newData[existingReasonIndex] = { ...newData[existingReasonIndex], time: newData[existingReasonIndex].time + duration };
           return newData;
         }
-        // This fallback is simplified for the prototype
         return [...prevData, { reason, time: duration }];
       });
       setKpis(prev => ({ ...prev, downtime: prev.downtime + duration }));
     }
     
+    setIsModalOpen(false);
+
     if (reason === 'Fin de Turno') {
       handleLogout();
       toast({ title: "Fin de turno registrado", description: "Sesión cerrada." });
     } else if (reason === 'Hora de Comida') {
-      setIsModalOpen(false);
+      setState('LOGGED_IN'); 
       setDowntimeStartTime(null);
-      setState('INACTIVE'); // Or a new state e.g., 'ON_BREAK'
-      toast({ title: "Paro por comida registrado.", description: "La máquina está en pausa." });
+      toast({ title: "Paro por comida registrado.", description: "La máquina está en pausa. Reinicie cuando termine." });
     } else {
-      setIsModalOpen(false);
+      setState('LOGGED_IN');
       toast({ title: "Paro Registrado", description: `Motivo: ${reason}.` });
     }
   };
   
-  const handleRestartProduction = () => {
+  const handleRestartProductionFromStop = () => {
     setState('RUNNING');
     setIsModalOpen(false);
     setDowntimeStartTime(null);
@@ -126,7 +140,7 @@ export function Dashboard() {
   const handleLogout = () => {
     setState('INACTIVE');
     setDowntimeStartTime(null);
-    setIsModalOpen(false); // Close modal on logout
+    setIsModalOpen(false);
     toast({ title: "Sesión Cerrada", description: "Vuelva a pasar su tarjeta para iniciar." });
   };
   
@@ -135,14 +149,14 @@ export function Dashboard() {
   const currentConfig = stateConfig[state];
 
   return (
-    <div className="w-full h-full mx-auto flex flex-col items-center justify-center space-y-4 md:space-y-6 bg-background">
+    <div className="w-full h-full mx-auto flex flex-col items-center justify-center space-y-4 md:space-y-6 bg-background p-4 md:p-6">
       <DowntimeModal
         isOpen={isModalOpen}
         onRegister={handleRegisterDowntime}
         downtimeReasons={downtimeReasons}
       />
       
-      <header className="w-full max-w-7xl flex justify-between items-center p-4">
+      <header className="w-full max-w-7xl flex justify-between items-center">
         <h1 className="text-3xl font-bold text-foreground">Avery Production Pulse</h1>
         {state !== 'INACTIVE' && (
           <div className="flex items-center gap-4">
@@ -155,40 +169,57 @@ export function Dashboard() {
         )}
       </header>
       
-      <div className="w-full flex-grow flex items-center justify-center px-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-7xl">
-          <div className="md:col-span-1 flex items-center justify-center">
-            <StatusWidget
-              status={currentConfig.status}
-              subtext={state === 'INACTIVE' ? currentConfig.subtext : ''}
-              color={currentConfig.color}
-              textColor={currentConfig.textColor}
-              Icon={currentConfig.Icon}
-              isPulsing={currentConfig.isPulsing}
-              onClick={handleWidgetClick}
-            />
-          </div>
-          <div className="md:col-span-2 space-y-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              <KpiCard title="Etiquetas Producidas" value={kpis.finishedLabels.toLocaleString()} />
-              <KpiCard title="Etiquetas por Minuto" value={kpis.labelsPerMinute.toLocaleString()} />
-            </div>
-            <DowntimeChart data={downtimeData} />
-          </div>
+      <main className="w-full flex-grow grid grid-cols-1 md:grid-cols-3 gap-8 items-center max-w-7xl">
+        <div className="md:col-span-1 flex items-center justify-center">
+          <StatusWidget
+            status={currentConfig.status}
+            subtext={state === 'INACTIVE' ? currentConfig.subtext : ''}
+            color={currentConfig.color}
+            textColor={currentConfig.textColor}
+            Icon={currentConfig.Icon}
+            isPulsing={currentConfig.isPulsing}
+            onClick={state === 'INACTIVE' ? handleLogin : () => {}}
+          />
         </div>
-      </div>
+        <div className="md:col-span-2 space-y-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+            <KpiCard title="Etiquetas Producidas" value={kpis.finishedLabels.toLocaleString()} />
+            <KpiCard title="Etiquetas por Minuto" value={kpis.labelsPerMinute.toLocaleString()} />
+          </div>
+          <DowntimeChart data={downtimeData} />
+        </div>
+      </main>
       
-      {state === 'STOPPED' && (
-         <div className="w-full max-w-7xl p-4">
+      <footer className="w-full max-w-7xl">
+         {state === 'LOGGED_IN' && (
             <Button 
-                onClick={handleRestartProduction}
+                onClick={handleStartProduction}
                 className="w-full h-24 text-4xl font-bold bg-status-green hover:bg-status-green/90 text-white shadow-lg"
             >
                 <PlayCircle className="mr-4 h-12 w-12" />
-                Reiniciar Producción
+                Iniciar Producción
             </Button>
-         </div>
-      )}
+         )}
+         {state === 'RUNNING' && (
+            <Button 
+                onClick={handleStopProduction}
+                variant="destructive"
+                className="w-full h-24 text-4xl font-bold shadow-lg"
+            >
+                <Square className="mr-4 h-12 w-12" />
+                Detener Producción
+            </Button>
+         )}
+          {state === 'STOPPED' && (
+             <Button 
+                 onClick={handleRestartProductionFromStop}
+                 className="w-full h-24 text-4xl font-bold bg-status-green hover:bg-status-green/90 text-white shadow-lg"
+             >
+                 <PlayCircle className="mr-4 h-12 w-12" />
+                 Reiniciar Producción
+             </Button>
+          )}
+      </footer>
     </div>
   );
 }
