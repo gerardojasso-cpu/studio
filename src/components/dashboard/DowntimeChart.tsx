@@ -27,16 +27,16 @@ interface DowntimeChartProps {
 const chartConfig = {
   time: {
     label: "Tiempo (min)",
-    color: "hsl(var(--primary))",
+    color: "hsl(var(--accent))",
   },
 } satisfies ChartConfig;
 
 export function DowntimeChart({ data }: DowntimeChartProps) {
   return (
-    <Card>
+    <Card className="bg-card">
       <CardHeader>
         <CardTitle>Análisis de Tiempos de Paro</CardTitle>
-        <CardDescription>Tiempo total de paro por motivo en minutos</CardDescription>
+        <CardDescription className="text-accent">Tiempo total de paro por motivo en minutos</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
@@ -46,14 +46,14 @@ export function DowntimeChart({ data }: DowntimeChartProps) {
               data={data}
               margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
             >
-              <CartesianGrid vertical={false} />
+              <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
               <XAxis
                 dataKey="reason"
                 tickLine={false}
                 tickMargin={10}
                 axisLine={false}
                 tickFormatter={(value) => value}
-                className="fill-muted-foreground"
+                className="fill-accent"
               />
               <YAxis
                 dataKey="time"
@@ -61,13 +61,13 @@ export function DowntimeChart({ data }: DowntimeChartProps) {
                 axisLine={false}
                 tickMargin={10}
                 tickFormatter={(value) => `${value} min`}
-                className="fill-muted-foreground"
+                className="fill-accent"
               />
               <ChartTooltip
                 cursor={false}
                 content={<ChartTooltipContent indicator="line" />}
               />
-              <Bar dataKey="time" radius={8} />
+              <Bar dataKey="time" fill="hsl(var(--accent))" radius={8} />
             </BarChart>
           </ResponsiveContainer>
         </ChartContainer>
