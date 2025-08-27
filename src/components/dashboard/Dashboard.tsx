@@ -34,7 +34,7 @@ const stateConfig = {
     statusText: "Inactiva",
     statusColor: "bg-status-gray",
     statusIcon: PowerOff,
-    mainText: "Dashboard de Producción - Pase su tarjeta para iniciar sesión",
+    mainText: "Pase su tarjeta para iniciar sesión",
     isPulsing: false,
     nextState: 'LOGGED_IN',
   },
@@ -248,48 +248,46 @@ export function Dashboard() {
                 </div>
                 <p className="font-semibold text-lg">{currentConfig.mainText}</p>
             </Card>
-            {state !== 'INACTIVE' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Power className="h-5 w-5" />
-                    Control de Máquina
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="font-bold text-lg">{currentConfig.statusText}</p>
-                    <p className="text-sm text-muted-foreground">{currentConfig.mainText}</p>
-                  </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Power className="h-5 w-5" />
+                  Control de Máquina
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="font-bold text-lg">{currentConfig.statusText}</p>
+                  <p className="text-sm text-muted-foreground">{currentConfig.mainText}</p>
+                </div>
 
-                  {state === 'LOGGED_IN' && (
-                    <Button onClick={handleStateAction} className="w-full font-bold bg-status-green hover:bg-status-green/90">
-                      <PlayCircle className="mr-2 h-5 w-5" />
-                      Iniciar Producción
-                    </Button>
-                  )}
-                  {state === 'RUNNING' && (
-                    <Button onClick={handleStateAction} className="w-full font-bold bg-primary hover:bg-primary/90">
-                      <Square className="mr-2 h-5 w-5" />
-                      Detener Producción
-                    </Button>
-                  )}
-                  {state === 'PENDING_OPERATOR_CONFIRMATION' && (
-                    <Button onClick={handleStateAction} className="w-full font-bold bg-status-green hover:bg-status-green/90">
-                      <CheckCircle2 className="mr-2 h-5 w-5" />
-                      Confirmar Fin de Paro
-                    </Button>
-                  )}
-                  
-                  <div className="flex justify-between text-sm">
-                    <span className="font-semibold">Seguridad:</span>
-                    <span className="flex items-center gap-1 font-semibold text-status-green">
-                      <CheckCircle2 className="h-4 w-4" /> Sistemas OK
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                {state === 'LOGGED_IN' && (
+                  <Button onClick={handleStateAction} className="w-full font-bold bg-status-green hover:bg-status-green/90">
+                    <PlayCircle className="mr-2 h-5 w-5" />
+                    Iniciar Producción
+                  </Button>
+                )}
+                {state === 'RUNNING' && (
+                  <Button onClick={handleStateAction} className="w-full font-bold bg-primary hover:bg-primary/90">
+                    <Square className="mr-2 h-5 w-5" />
+                    Detener Producción
+                  </Button>
+                )}
+                {state === 'PENDING_OPERATOR_CONFIRMATION' && (
+                  <Button onClick={handleStateAction} className="w-full font-bold bg-status-green hover:bg-status-green/90">
+                    <CheckCircle2 className="mr-2 h-5 w-5" />
+                    Confirmar Fin de Paro
+                  </Button>
+                )}
+                
+                <div className="flex justify-between text-sm">
+                  <span className="font-semibold">Seguridad:</span>
+                  <span className="flex items-center gap-1 font-semibold text-status-green">
+                    <CheckCircle2 className="h-4 w-4" /> Sistemas OK
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Columna Central */}
@@ -341,18 +339,18 @@ export function Dashboard() {
         </div>
       </main>
       
-      {state !== 'INACTIVE' && (
-        <footer className="flex items-center justify-end gap-4 p-4 bg-white border-t">
-          <Button variant="outline" className="font-bold">
-              <BarChart className="mr-2 h-5 w-5" />
-              Análisis de Paros
-          </Button>
-          <Button className="font-bold bg-gray-700 hover:bg-gray-800 text-white">
-              <History className="mr-2 h-5 w-5" />
-              Historial y Tendencias
-          </Button>
-        </footer>
-      )}
+      <footer className="flex items-center justify-end gap-4 p-4 bg-white border-t">
+        <Button variant="outline" className="font-bold">
+            <BarChart className="mr-2 h-5 w-5" />
+            Análisis de Paros
+        </Button>
+        <Button className="font-bold bg-gray-700 hover:bg-gray-800 text-white">
+            <History className="mr-2 h-5 w-5" />
+            Historial y Tendencias
+        </Button>
+      </footer>
     </>
   );
 }
+
+    
