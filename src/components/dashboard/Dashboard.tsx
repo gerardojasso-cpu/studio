@@ -43,7 +43,7 @@ const stateConfig = {
     statusColor: "bg-status-green",
     statusIcon: PlayCircle,
     mainText: "Sistema preparado para iniciar producción",
-    isPulsing: false,
+    isPulsing: true,
     nextState: 'RUNNING',
   },
   RUNNING: {
@@ -147,9 +147,11 @@ export function Dashboard() {
       setDowntimeStartTime(Date.now());
       setTimeout(() => setIsModalOpen(true), 500);
     } else if (state === 'AWAITING_SUPPORT') {
+        // Simulate technician arrival
         setState('REPAIR_IN_PROGRESS');
         toast({ title: "Técnico ha llegado", description: "Reparación en curso." });
     } else if (state === 'REPAIR_IN_PROGRESS') {
+        // Simulate repair finished
         setState('PENDING_OPERATOR_CONFIRMATION');
         toast({ title: "Reparación Finalizada", description: "Pendiente de confirmación del operador." });
     } else if (state === 'PENDING_OPERATOR_CONFIRMATION') {
