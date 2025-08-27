@@ -5,62 +5,82 @@ import {
   CheckCircle2, 
   AlertTriangle, 
   PlayCircle, 
-  User, 
   Power, 
-  Wrench,
+  PowerOff,
   BarChart,
   History,
   Zap,
-  PowerOff,
   Clock,
   TrendingUp,
-  Square
+  Square,
+  Wrench
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { DowntimeModal, type DowntimeReason } from "./DowntimeModal";
 import { useToast } from "@/hooks/use-toast";
 import { KpiCard } from "./KpiCard";
 import { DowntimeChart } from "./DowntimeChart";
+import { cn } from "@/lib/utils";
 
-type MachineState = 'INACTIVE' | 'LOGGED_IN' | 'RUNNING' | 'STOPPED' | 'AWAITING_CONFIRMATION';
+type MachineState = 'INACTIVE' | 'LOGGED_IN' | 'RUNNING' | 'STOPPED' | 'AWAITING_SUPPORT' | 'REPAIR_IN_PROGRESS' | 'PENDING_OPERATOR_CONFIRMATION';
 
 const stateConfig = {
   INACTIVE: {
-    statusText: "Sistema Inactivo",
+    statusText: "Inactiva",
     statusColor: "bg-status-gray",
-    buttonText: "Iniciar Sesión",
-    Icon: PowerOff,
-    action: 'login'
+    statusIcon: PowerOff,
+    mainText: "Por favor, pase su tarjeta para iniciar sesión.",
+    isPulsing: false,
+    nextState: 'LOGGED_IN',
   },
   LOGGED_IN: {
     statusText: "Máquina Lista",
-    statusColor: "bg-status-blue",
-    buttonText: "Iniciar Producción",
-    Icon: PlayCircle,
-    action: 'start_production'
+    statusColor: "bg-status-green",
+    statusIcon: PlayCircle,
+    mainText: "Sistema preparado para iniciar producción",
+    isPulsing: false,
+    nextState: 'RUNNING',
   },
   RUNNING: {
-    statusText: "Producción Activa",
+    statusText: "Funcionando",
     statusColor: "bg-status-green",
-    buttonText: "Detener Producción",
-    Icon: Square,
-    action: 'stop_production'
+    statusIcon: Zap,
+    mainText: "Producción Activa",
+    isPulsing: false,
+    nextState: 'STOPPED',
   },
   STOPPED: {
-    statusText: "Máquina Parada",
-    statusColor: "bg-destructive",
-    buttonText: "Registrar Paro",
-    Icon: AlertTriangle,
-    action: 'open_modal'
+    statusText: "Parada",
+    statusColor: "bg-primary",
+    statusIcon: AlertTriangle,
+    mainText: "Registro de Paro Requerido",
+    isPulsing: true,
+    nextState: 'AWAITING_SUPPORT',
   },
-  AWAITING_CONFIRMATION: {
-    statusText: "Paro Registrado",
+  AWAITING_SUPPORT: {
+    statusText: "Esperando a Mantenimiento",
     statusColor: "bg-status-orange",
-    buttonText: "Confirmar Fin de Paro",
-    Icon: CheckCircle2,
-    action: 'end_downtime'
+    statusIcon: Clock,
+    mainText: "Esperando respuesta del equipo de soporte.",
+    isPulsing: true,
+    nextState: 'REPAIR_IN_PROGRESS',
+  },
+  REPAIR_IN_PROGRESS: {
+    statusText: "Reparación en Curso",
+    statusColor: "bg-status-yellow",
+    statusIcon: Wrench,
+    mainText: "Técnico trabajando en la máquina.",
+    isPulsing: false,
+    nextState: 'PENDING_OPERATOR_CONFIRMATION',
+  },
+  PENDING_OPERATOR_CONFIRMATION: {
+    statusText: "Solucionado, Pendiente de Operador",
+    statusColor: "bg-status-orange",
+    statusIcon: CheckCircle2,
+    mainText: "Técnico ha finalizado. Confirme para reiniciar.",
+    isPulsing: true,
+    nextState: 'LOGGED_IN',
   },
 };
 
@@ -81,26 +101,28 @@ export function Dashboard() {
   const currentConfig = stateConfig[state];
 
   const handleStateAction = () => {
-    switch (currentConfig.action) {
-      case 'login':
-        setState('LOGGED_IN');
-        toast({ title: "Inicio de sesión exitoso", description: "Operador: Juan Pérez" });
-        break;
-      case 'start_production':
-        setState('RUNNING');
-        setDowntimeStartTime(null);
-        toast({ title: "Producción Iniciada", description: "La máquina ha comenzado a funcionar." });
-        break;
-      case 'stop_production':
-        setState('STOPPED');
-        setDowntimeStartTime(Date.now());
-        setTimeout(() => setIsModalOpen(true), 500);
-        break;
-      case 'end_downtime':
+    // Simulates the main interaction click, advancing the state machine
+    if (state === 'INACTIVE') {
+      setState('LOGGED_IN');
+      toast({ title: "Inicio de sesión exitoso", description: "Operador: Juan Pérez" });
+    } else if (state === 'LOGGED_IN') {
+      setState('RUNNING');
+      setDowntimeStartTime(null);
+      toast({ title: "Producción Iniciada", description: "La máquina ha comenzado a funcionar." });
+    } else if (state === 'RUNNING') {
+      setState('STOPPED');
+      setDowntimeStartTime(Date.now());
+      setTimeout(() => setIsModalOpen(true), 500);
+    } else if (state === 'AWAITING_SUPPORT') {
+        setState('REPAIR_IN_PROGRESS');
+        toast({ title: "Técnico ha llegado", description: "Reparación en curso." });
+    } else if (state === 'REPAIR_IN_PROGRESS') {
+        setState('PENDING_OPERATOR_CONFIRMATION');
+        toast({ title: "Reparación Finalizada", description: "Pendiente de confirmación del operador." });
+    } else if (state === 'PENDING_OPERATOR_CONFIRMATION') {
         setState('LOGGED_IN');
         setDowntimeStartTime(null);
         toast({ title: "Fin de Paro Confirmado", description: "La máquina está lista para reiniciar producción." });
-        break;
     }
   };
 
@@ -127,10 +149,10 @@ export function Dashboard() {
     } else if (reason === 'Hora de Comida') {
       setState('LOGGED_IN'); 
       setDowntimeStartTime(null);
-      toast({ title: "Paro por comida registrado.", description: "La máquina está en pausa. Reinicie cuando termine." });
+      toast({ title: "Paro por comida registrado.", description: "La máquina está en pausa." });
     } else {
-      setState('AWAITING_CONFIRMATION');
-      toast({ title: "Paro Registrado", description: `Motivo: ${reason}. Confirme cuando el problema esté resuelto.` });
+      setState('AWAITING_SUPPORT');
+      toast({ title: "Paro Registrado", description: `Motivo: ${reason}. Se ha notificado a soporte.` });
     }
   };
     
@@ -153,17 +175,21 @@ export function Dashboard() {
       
       <header className="flex h-20 items-center justify-between bg-[#1f2937] px-6 text-white">
         <div>
-          <h1 className="text-xl font-bold">Dashboard de Producción</h1>
+          <h1 className="text-xl font-bold">Dashboard de Producción Avery Dennison</h1>
           <p className="text-sm text-gray-300">Línea de Etiquetas - Estación 01</p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="font-semibold">Operador: Juan Pérez</p>
-            <p className="text-xs text-gray-300">Turno 1 - 06:00 AM</p>
-          </div>
-          <Button variant="ghost" size="icon" onClick={handleLogout} className="text-white hover:bg-gray-700">
-            <PowerOff className="h-5 w-5" />
-          </Button>
+          {state !== 'INACTIVE' && (
+            <>
+            <div className="text-right">
+              <p className="font-semibold">Operador: Juan Pérez</p>
+              <p className="text-xs text-gray-300">Turno 1 - 06:00 AM</p>
+            </div>
+            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-white hover:bg-gray-700">
+                <PowerOff className="h-5 w-5" />
+            </Button>
+            </>
+          )}
         </div>
       </header>
       
@@ -171,11 +197,15 @@ export function Dashboard() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
           {/* Columna Izquierda */}
           <div className="lg:col-span-1">
-            <Card className="mb-6 flex flex-col items-center justify-center text-center h-52">
-                <div className={`flex h-24 w-24 items-center justify-center rounded-full ${currentConfig.statusColor} mb-4`}>
-                    <Zap className="h-12 w-12 text-white" />
+            <Card className="mb-6 flex flex-col items-center justify-center text-center h-52 cursor-pointer hover:bg-slate-50 transition-colors" onClick={handleStateAction}>
+                <div className={cn(
+                    "flex h-24 w-24 items-center justify-center rounded-full mb-4 transition-colors", 
+                    currentConfig.statusColor,
+                    currentConfig.isPulsing && 'soft-pulse'
+                  )}>
+                    <currentConfig.statusIcon className="h-12 w-12 text-white" />
                 </div>
-                <p className="font-semibold text-lg">SISTEMA PREPARADO</p>
+                <p className="font-semibold text-lg">{currentConfig.mainText}</p>
             </Card>
             <Card>
               <CardHeader>
@@ -187,15 +217,28 @@ export function Dashboard() {
               <CardContent className="space-y-4">
                 <div>
                   <p className="font-bold text-lg">{currentConfig.statusText}</p>
-                  <p className="text-sm text-muted-foreground">Sistema preparado para iniciar producción</p>
+                  <p className="text-sm text-muted-foreground">{currentConfig.mainText}</p>
                 </div>
-                <Button 
-                  onClick={handleStateAction}
-                  className={`w-full font-bold ${currentConfig.action === 'start_production' ? 'bg-status-green hover:bg-status-green/90' : ''}`}
-                >
-                  <currentConfig.Icon className="mr-2 h-5 w-5" />
-                  {currentConfig.buttonText}
-                </Button>
+
+                {state === 'LOGGED_IN' && (
+                  <Button onClick={handleStateAction} className="w-full font-bold bg-status-green hover:bg-status-green/90">
+                    <PlayCircle className="mr-2 h-5 w-5" />
+                    Iniciar Producción
+                  </Button>
+                )}
+                {state === 'RUNNING' && (
+                  <Button onClick={handleStateAction} className="w-full font-bold bg-primary hover:bg-primary/90">
+                    <Square className="mr-2 h-5 w-5" />
+                    Detener Producción
+                  </Button>
+                )}
+                 {state === 'PENDING_OPERATOR_CONFIRMATION' && (
+                  <Button onClick={handleStateAction} className="w-full font-bold bg-status-green hover:bg-status-green/90">
+                    <CheckCircle2 className="mr-2 h-5 w-5" />
+                    Confirmar Fin de Paro
+                  </Button>
+                )}
+                
                 <div className="flex justify-between text-sm">
                   <span className="font-semibold">Seguridad:</span>
                   <span className="flex items-center gap-1 font-semibold text-status-green">
@@ -240,7 +283,6 @@ export function Dashboard() {
                   <CardTitle>Estado de Máquina</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {/* Placeholder for Donut Chart */}
                   <div className="h-40 w-full bg-gray-200 rounded-md flex items-center justify-center">
                     <p>Donut Chart</p>
                   </div>
@@ -251,12 +293,12 @@ export function Dashboard() {
         </div>
       </main>
       
-      <footer className="flex items-center justify-end gap-4 p-6 bg-white border-t">
-        <Button variant="destructive" className="font-bold">
+      <footer className="flex items-center justify-end gap-4 p-4 bg-white border-t">
+        <Button variant="outline" className="font-bold">
             <BarChart className="mr-2 h-5 w-5" />
             Análisis de Paros
         </Button>
-        <Button className="font-bold bg-status-blue hover:bg-status-blue/90">
+        <Button className="font-bold bg-gray-700 hover:bg-gray-800 text-white">
             <History className="mr-2 h-5 w-5" />
             Historial y Tendencias
         </Button>

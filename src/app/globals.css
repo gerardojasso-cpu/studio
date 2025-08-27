@@ -13,7 +13,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 224 71% 4%;
     
-    --primary: 217 91% 60%; /* Blue */
+    --primary: 358 78% 59%; /* Red, from #E31F26 */
     --primary-foreground: 0 0% 98%;
     
     --secondary: 220 13% 91%;
@@ -34,12 +34,12 @@
     
     --radius: 0.5rem;
 
-    --status-red: 358 78% 59%;
-    --status-green: 139 45% 52%;
+    --status-red: 358 78% 59%; /* #E31F26 */
+    --status-green: 122 39% 49%; /* #4CAF50 */
     --status-blue: 217 91% 60%;
-    --status-orange: 36 100% 50%;
-    --status-yellow: 51 100% 50%;
-    --status-gray: 220 9% 46%;
+    --status-orange: 36 100% 50%; /* #FF9800 */
+    --status-yellow: 51 100% 50%; /* #FFD700 */
+    --status-gray: 240 2% 55%; /* #8C8C8C */
   }
 
   .dark {
@@ -71,5 +71,21 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .soft-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.02);
+    }
   }
 }

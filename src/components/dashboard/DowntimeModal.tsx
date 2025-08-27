@@ -47,7 +47,7 @@ export function DowntimeModal({ isOpen, onRegister, downtimeReasons }: DowntimeM
             </div>
             <DialogTitle className="text-4xl font-bold">Registrar Motivo de Paro</DialogTitle>
             <DialogDescription className="mt-4 text-xl text-muted-foreground">
-              Seleccione la causa del paro para notificar al equipo correspondiente.
+              Seleccione la causa del paro para notificar al equipo correspondiente. La máquina no podrá reiniciarse hasta que se registre el motivo.
             </DialogDescription>
           </div>
         </DialogHeader>
@@ -79,5 +79,3 @@ export function DowntimeModal({ isOpen, onRegister, downtimeReasons }: DowntimeM
     </Dialog>
   );
 }
-
-    
