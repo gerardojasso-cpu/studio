@@ -20,15 +20,15 @@ import {
 import { AlertTriangle } from 'lucide-react';
 
 export type DowntimeReason = 'Falta de Material' | 'Mantenimiento' | 'Eléctrico' | 'Calidad' | 'Ajuste';
-const downtimeReasons: DowntimeReason[] = ['Falta de Material', 'Mantenimiento', 'Eléctrico', 'Calidad', 'Ajuste'];
 
 interface DowntimeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRegister: (reason: DowntimeReason) => void;
+  downtimeReasons: DowntimeReason[];
 }
 
-export function DowntimeModal({ isOpen, onClose, onRegister }: DowntimeModalProps) {
+export function DowntimeModal({ isOpen, onClose, onRegister, downtimeReasons }: DowntimeModalProps) {
   const [selectedReason, setSelectedReason] = useState<DowntimeReason | null>(null);
 
   const handleRegisterClick = () => {
@@ -72,7 +72,6 @@ export function DowntimeModal({ isOpen, onClose, onRegister }: DowntimeModalProp
             onClick={handleRegisterClick}
             disabled={!selectedReason}
             className="w-full h-12 text-lg font-bold"
-            variant="destructive"
           >
             Registrar Paro
           </Button>

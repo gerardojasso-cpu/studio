@@ -9,9 +9,10 @@ interface StatusWidgetProps {
   Icon: ElementType;
   isPulsing: boolean;
   onClick: () => void;
+  textColor?: string;
 }
 
-export function StatusWidget({ status, subtext, color, Icon, isPulsing, onClick }: StatusWidgetProps) {
+export function StatusWidget({ status, subtext, color, Icon, isPulsing, onClick, textColor = 'text-white' }: StatusWidgetProps) {
   return (
     <Card 
       className="h-full aspect-square max-w-md w-full flex flex-col items-center justify-center text-center p-6 cursor-pointer hover:shadow-2xl transition-shadow duration-300 bg-transparent border-0 shadow-none"
@@ -20,15 +21,14 @@ export function StatusWidget({ status, subtext, color, Icon, isPulsing, onClick 
       <CardContent className="flex flex-col items-center justify-center p-0 w-full h-full">
         <div 
           className={cn(
-            "relative flex items-center justify-center w-full h-full rounded-full transition-all duration-500 shadow-inner", 
+            "relative flex items-center justify-center w-full h-full rounded-full transition-all duration-500 shadow-lg", 
             color,
             isPulsing && "animate-pulse"
           )}
-          style={{boxShadow: `0 0 60px 10px ${color.replace('bg-','var(--')})`}}
         >
           <div className="text-center">
-            <Icon className="h-32 w-32 text-white/90 mx-auto" />
-            <h2 className="text-5xl font-bold text-white mt-4">{status}</h2>
+            <Icon className={cn("h-32 w-32 mx-auto", textColor)} />
+            <h2 className={cn("text-5xl font-bold mt-4", textColor)}>{status}</h2>
           </div>
         </div>
         <p className="text-xl text-muted-foreground mt-6 text-center">{subtext}</p>

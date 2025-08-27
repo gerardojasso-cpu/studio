@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { CreditCard, CheckCircle2, AlertTriangle, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusWidget } from "./StatusWidget";
@@ -15,7 +15,8 @@ const stateConfig = {
   INACTIVE: {
     status: "Inactiva",
     subtext: "Sin Operador - Pase su tarjeta para iniciar sesión",
-    color: "bg-status-gray",
+    color: "bg-status-gray/20",
+    textColor: "text-status-gray",
     Icon: CreditCard,
     isPulsing: false,
   },
@@ -23,6 +24,7 @@ const stateConfig = {
     status: "Funcionando",
     subtext: "Operador: Juan Pérez",
     color: "bg-status-green",
+    textColor: "text-white",
     Icon: CheckCircle2,
     isPulsing: false,
   },
@@ -30,6 +32,7 @@ const stateConfig = {
     status: "Parada",
     subtext: "Esperando registro de motivo...",
     color: "bg-destructive",
+    textColor: "text-white",
     Icon: AlertTriangle,
     isPulsing: true,
   },
@@ -96,6 +99,13 @@ export function Dashboard() {
           );
         } else {
           // For simplicity in this prototype, we'll just update one, you could add new ones
+          // Find the reason in downtimeReasons and replace it.
+          const reasonIndex = downtimeReasons.indexOf(reason);
+          if (reasonIndex > -1 && reasonIndex < prevData.length) {
+            const newData = [...prevData];
+            newData[reasonIndex] = { ...newData[reasonIndex], time: newData[reasonIndex].time + duration };
+            return newData;
+          }
           return prevData;
         }
       });
@@ -112,6 +122,7 @@ export function Dashboard() {
     toast({ title: "Producción Reiniciada", description: "La máquina ha vuelto a funcionar." });
   };
 
+  const downtimeReasons: DowntimeReason[] = ['Falta de Material', 'Mantenimiento', 'Eléctrico', 'Calidad', 'Ajuste'];
 
   const currentConfig = stateConfig[state];
 
@@ -121,6 +132,7 @@ export function Dashboard() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)} 
         onRegister={handleRegisterDowntime}
+        downtimeReasons={downtimeReasons}
       />
       
       <div className="w-full flex-grow flex items-center justify-center">
@@ -130,6 +142,7 @@ export function Dashboard() {
               status={currentConfig.status}
               subtext={currentConfig.subtext}
               color={currentConfig.color}
+              textColor={currentConfig.textColor}
               Icon={currentConfig.Icon}
               isPulsing={currentConfig.isPulsing}
               onClick={handleWidgetClick}
