@@ -19,8 +19,8 @@ import {
 } from "@/components/ui/select";
 import { AlertTriangle } from 'lucide-react';
 
-export type DowntimeReason = 'Mecánico' | 'Eléctrico' | 'Material' | 'Calidad' | 'Ajuste';
-const downtimeReasons: DowntimeReason[] = ['Mecánico', 'Eléctrico', 'Material', 'Calidad', 'Ajuste'];
+export type DowntimeReason = 'Falta de Material' | 'Mantenimiento' | 'Eléctrico' | 'Calidad' | 'Ajuste';
+const downtimeReasons: DowntimeReason[] = ['Falta de Material', 'Mantenimiento', 'Eléctrico', 'Calidad', 'Ajuste'];
 
 interface DowntimeModalProps {
   isOpen: boolean;
@@ -40,21 +40,21 @@ export function DowntimeModal({ isOpen, onClose, onRegister }: DowntimeModalProp
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] bg-card border-border text-card-foreground">
         <DialogHeader>
           <div className="flex items-center justify-center flex-col text-center">
             <div className="bg-destructive/10 p-3 rounded-full mb-4">
-              <AlertTriangle className="h-8 w-8 text-destructive" />
+              <AlertTriangle className="h-10 w-10 text-destructive" />
             </div>
             <DialogTitle className="text-2xl font-bold">Registrar Motivo de Paro</DialogTitle>
-            <DialogDescription className="mt-2">
+            <DialogDescription className="mt-2 text-muted-foreground">
               Seleccione la causa del paro para notificar al equipo correspondiente.
             </DialogDescription>
           </div>
         </DialogHeader>
         <div className="py-4">
           <Select onValueChange={(value: DowntimeReason) => setSelectedReason(value)}>
-            <SelectTrigger className="w-full h-12 text-lg">
+            <SelectTrigger className="w-full h-12 text-lg bg-input border-border focus:ring-ring">
               <SelectValue placeholder="Seleccionar un motivo..." />
             </SelectTrigger>
             <SelectContent>
@@ -71,7 +71,7 @@ export function DowntimeModal({ isOpen, onClose, onRegister }: DowntimeModalProp
             type="button"
             onClick={handleRegisterClick}
             disabled={!selectedReason}
-            className="w-full h-12 text-lg"
+            className="w-full h-12 text-lg font-bold"
             variant="destructive"
           >
             Registrar Paro

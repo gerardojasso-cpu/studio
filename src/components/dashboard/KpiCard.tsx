@@ -8,16 +8,16 @@ interface KpiCardProps {
 
 export function KpiCard({ title, value, unit }: KpiCardProps) {
   return (
-    <Card className="flex flex-col justify-center p-4 bg-card">
-      <CardHeader className="p-2 pb-0">
-        <CardTitle className="text-accent font-medium text-base">{title}</CardTitle>
+    <Card className="flex flex-col justify-center p-6 bg-card border-border text-center h-full">
+      <CardHeader className="p-0 mb-2">
+        <CardTitle className="text-muted-foreground font-bold text-xl">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="p-2">
-        <div className="flex items-baseline gap-2">
-          <span className="text-5xl font-extrabold leading-none tracking-tight text-foreground">
+      <CardContent className="p-0">
+        <div className="flex items-baseline justify-center gap-2">
+          <span className="text-8xl font-extrabold leading-none tracking-tighter text-foreground">
             {value}
           </span>
-          {unit && <span className="text-lg font-medium text-accent">{unit}</span>}
+          {unit && <span className="text-2xl font-medium text-muted-foreground">{unit}</span>}
         </div>
       </CardContent>
     </Card>
