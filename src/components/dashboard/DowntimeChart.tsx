@@ -6,7 +6,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import {
   ChartContainer,
@@ -26,52 +25,49 @@ interface DowntimeChartProps {
 
 const chartConfig = {
   time: {
-    label: "Tiempo (min)",
-    color: "hsl(var(--accent))",
+    label: "Tiempo (h)",
+    color: "hsl(var(--destructive))",
   },
 } satisfies ChartConfig;
 
 export function DowntimeChart({ data }: DowntimeChartProps) {
   return (
-    <Card className="bg-card border-border">
+    <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Análisis de Tiempos de Paro</CardTitle>
-        <CardDescription className="text-muted-foreground">Tiempo total de paro por motivo (minutos)</CardDescription>
+        <CardTitle className="text-base">Motivos de Paro</CardTitle>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
-          <ResponsiveContainer width="100%" height={250}>
+        <ChartContainer config={chartConfig} className="min-h-[150px] w-full">
+          <ResponsiveContainer width="100%" height={150}>
             <BarChart
               accessibilityLayer
               data={data}
-              margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
               layout="vertical"
+              margin={{ left: 10, right: 30 }}
             >
-              <CartesianGrid horizontal={false} stroke="hsl(var(--border))" />
+              <CartesianGrid horizontal={false} />
               <YAxis
                 type="category"
                 dataKey="reason"
                 tickLine={false}
                 axisLine={false}
-                tickMargin={10}
+                tickMargin={5}
                 width={80}
-                tickFormatter={(value) => value}
-                className="fill-muted-foreground"
+                className="text-xs"
               />
               <XAxis
                 type="number"
                 dataKey="time"
                 tickLine={false}
                 axisLine={false}
-                tickMargin={10}
-                tickFormatter={(value) => `${value}`}
-                className="fill-muted-foreground"
+                tickMargin={5}
+                className="text-xs"
               />
               <ChartTooltip
                 cursor={false}
                 content={<ChartTooltipContent indicator="line" />}
               />
-              <Bar dataKey="time" fill="hsl(var(--accent))" radius={5} />
+              <Bar dataKey="time" fill="var(--color-time)" radius={4} />
             </BarChart>
           </ResponsiveContainer>
         </ChartContainer>
