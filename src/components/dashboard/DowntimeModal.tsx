@@ -40,11 +40,11 @@ export function DowntimeModal({ isOpen, onClose, onRegister }: DowntimeModalProp
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] bg-card border-border">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <div className="flex items-center justify-center flex-col text-center">
-            <div className="bg-status-red/20 p-3 rounded-full mb-4">
-              <AlertTriangle className="h-8 w-8 text-status-red" />
+            <div className="bg-destructive/10 p-3 rounded-full mb-4">
+              <AlertTriangle className="h-8 w-8 text-destructive" />
             </div>
             <DialogTitle className="text-2xl font-bold">Registrar Motivo de Paro</DialogTitle>
             <DialogDescription className="mt-2">
@@ -71,7 +71,8 @@ export function DowntimeModal({ isOpen, onClose, onRegister }: DowntimeModalProp
             type="button"
             onClick={handleRegisterClick}
             disabled={!selectedReason}
-            className="w-full h-12 text-lg bg-status-red hover:bg-status-red/90 text-white"
+            className="w-full h-12 text-lg"
+            variant="destructive"
           >
             Registrar Paro
           </Button>

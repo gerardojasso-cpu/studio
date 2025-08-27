@@ -146,13 +146,13 @@ export function Dashboard() {
   const currentConfig = stateConfig[state];
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6">
+    <div className="w-full max-w-7xl mx-auto space-y-8">
       <DowntimeModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onRegister={handleRegisterDowntime}
       />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1">
           <StatusWidget
             status={currentConfig.status}
@@ -163,7 +163,7 @@ export function Dashboard() {
             onClick={handleStateTransition}
           />
         </div>
-        <div className="lg:col-span-2 grid grid-cols-2 gap-6">
+        <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-6">
           <KpiCard title="Rollos Terminados" value={kpis.finishedRolls.toString()} />
           <KpiCard title="Tiempo de Paro" value={kpis.downtime.toString()} unit="min" />
           <KpiCard title="Rollos por Hora" value={kpis.rollsPerHour.toString()} />

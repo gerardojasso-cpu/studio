@@ -1,6 +1,6 @@
 "use client";
 
-import { Bar, BarChart, XAxis, YAxis, CartesianGrid } from "recharts";
+import { Bar, BarChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 import {
   Card,
   CardContent,
@@ -27,42 +27,49 @@ interface DowntimeChartProps {
 const chartConfig = {
   time: {
     label: "Tiempo (min)",
-    color: "hsl(var(--status-red))",
+    color: "hsl(var(--primary))",
   },
 } satisfies ChartConfig;
 
 export function DowntimeChart({ data }: DowntimeChartProps) {
   return (
-    <Card className="bg-card/70 backdrop-blur-sm">
+    <Card>
       <CardHeader>
         <CardTitle>Análisis de Tiempos de Paro</CardTitle>
         <CardDescription>Tiempo total de paro por motivo en minutos</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
-          <BarChart
-            accessibilityLayer
-            data={data}
-            layout="vertical"
-            margin={{ left: 10, top: 10, right: 10, bottom: 10 }}
-          >
-            <CartesianGrid horizontal={false} />
-            <YAxis
-              dataKey="reason"
-              type="category"
-              tickLine={false}
-              tickMargin={10}
-              axisLine={false}
-              tickFormatter={(value) => value.slice(0, 10)}
-              className="fill-muted-foreground"
-            />
-            <XAxis dataKey="time" type="number" hide />
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent indicator="line" />}
-            />
-            <Bar dataKey="time" layout="vertical" radius={5} />
-          </BarChart>
+        <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart
+              accessibilityLayer
+              data={data}
+              margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+            >
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="reason"
+                tickLine={false}
+                tickMargin={10}
+                axisLine={false}
+                tickFormatter={(value) => value}
+                className="fill-muted-foreground"
+              />
+              <YAxis
+                dataKey="time"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={10}
+                tickFormatter={(value) => `${value} min`}
+                className="fill-muted-foreground"
+              />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="line" />}
+              />
+              <Bar dataKey="time" radius={8} />
+            </BarChart>
+          </ResponsiveContainer>
         </ChartContainer>
       </CardContent>
     </Card>
