@@ -15,7 +15,7 @@ interface StatusWidgetProps {
 export function StatusWidget({ status, subtext, color, Icon, isPulsing, onClick, textColor = 'text-white' }: StatusWidgetProps) {
   return (
     <Card 
-      className="h-full aspect-square max-w-md w-full flex flex-col items-center justify-center text-center p-6 cursor-pointer hover:shadow-2xl transition-shadow duration-300 bg-transparent border-0 shadow-none"
+      className="h-full aspect-square max-w-sm w-full flex flex-col items-center justify-center text-center p-6 cursor-pointer hover:shadow-2xl transition-shadow duration-300 bg-transparent border-0 shadow-none"
       onClick={onClick}
     >
       <CardContent className="flex flex-col items-center justify-center p-0 w-full h-full">
@@ -27,11 +27,11 @@ export function StatusWidget({ status, subtext, color, Icon, isPulsing, onClick,
           )}
         >
           <div className="text-center">
-            <Icon className={cn("h-32 w-32 mx-auto", textColor)} />
-            <h2 className={cn("text-5xl font-bold mt-4", textColor)}>{status}</h2>
+            <Icon className={cn("h-24 w-24 md:h-32 md:w-32 mx-auto", textColor)} />
+            <h2 className={cn("text-4xl md:text-5xl font-bold mt-4", textColor)}>{status}</h2>
           </div>
         </div>
-        <p className="text-xl text-muted-foreground mt-6 text-center">{subtext}</p>
+        {subtext && <p className="text-lg md:text-xl text-muted-foreground mt-6 text-center">{subtext}</p>}
       </CardContent>
     </Card>
   );
