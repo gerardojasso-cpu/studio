@@ -1,5 +1,6 @@
 import type { ElementType } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from '@/lib/utils';
 
 interface KpiCardProps {
   title: string;
@@ -7,9 +8,10 @@ interface KpiCardProps {
   description: string;
   icon: ElementType;
   change: string;
+  changeColor: string;
 }
 
-export function KpiCard({ title, value, description, icon: Icon, change }: KpiCardProps) {
+export function KpiCard({ title, value, description, icon: Icon, change, changeColor }: KpiCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -17,7 +19,7 @@ export function KpiCard({ title, value, description, icon: Icon, change }: KpiCa
           <Icon className="h-5 w-5" />
           {title}
         </CardTitle>
-        <span className="text-xs font-semibold text-status-green">{change}</span>
+        <span className={cn("text-xs font-semibold", changeColor)}>{change}</span>
       </CardHeader>
       <CardContent>
         <div className="text-5xl font-extrabold">{value}</div>

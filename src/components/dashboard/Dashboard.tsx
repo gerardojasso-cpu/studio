@@ -272,7 +272,7 @@ export function Dashboard() {
           {/* Columna Izquierda */}
           <div className="lg:col-span-1 flex flex-col gap-6">
             <div className="flex flex-col flex-grow items-center justify-center text-center cursor-pointer p-4" onClick={handleStateAction}>
-                <div className="w-full aspect-square flex items-center justify-center">
+                <div className="w-full max-w-sm aspect-square flex items-center justify-center">
                     <div className={cn(
                         "flex flex-col h-full w-full items-center justify-center rounded-full transition-colors", 
                         currentConfig.statusColor,
@@ -293,9 +293,13 @@ export function Dashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="bg-status-green/10 text-status-green p-4 rounded-lg">
-                  <p className="font-bold text-lg">Máquina En Funcionamiento</p>
-                  <p className="text-sm">Producción activa en curso</p>
+                <div className="bg-muted text-foreground p-4 rounded-lg">
+                  <p className="font-bold text-lg">
+                    {state === 'RUNNING' ? 'Máquina En Funcionamiento' : 'Máquina Detenida'}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {state === 'RUNNING' ? 'Producción activa en curso' : 'Esperando acción del operador'}
+                  </p>
                 </div>
 
                 {state === 'LOGGED_IN' && (
@@ -335,6 +339,7 @@ export function Dashboard() {
               description="Total de rollos procesados"
               icon={Package}
               change="+12%"
+              changeColor="text-status-green"
             />
             <KpiCard
               title="Eficiencia (Rendimiento General)"
@@ -342,6 +347,7 @@ export function Dashboard() {
               description="Producción vs. tiempo total"
               icon={TrendingUp}
               change="+3%"
+              changeColor="text-status-green"
             />
             <KpiCard
               title="Tiempo de Paro Total"
@@ -349,6 +355,7 @@ export function Dashboard() {
               description="Tiempo acumulado detenido"
               icon={Timer}
               change="+8%"
+              changeColor="text-destructive"
             />
              <KpiCard
               title="Etiquetas de Sacrificio Usadas"
@@ -356,6 +363,7 @@ export function Dashboard() {
               description="Correcciones de calidad aplicadas"
               icon={Archive}
               change="+2"
+              changeColor="text-status-orange"
             />
             <KpiCard
               title="Porcentaje de Etiquetas Malas"
@@ -363,6 +371,7 @@ export function Dashboard() {
               description="Detectadas por el sistema"
               icon={BadgePercent}
               change="-0.1%"
+              changeColor="text-status-green"
             />
           </div>
 
