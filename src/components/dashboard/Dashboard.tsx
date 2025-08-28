@@ -18,7 +18,8 @@ import {
   BadgePercent,
   Settings,
   User,
-  Dot
+  Dot,
+  Hand
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,14 +31,14 @@ import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 
-type MachineState = 'INACTIVE' | 'LOGGED_IN' | 'RUNNING' | 'STOPPED' | 'AWAITING_SUPPORT' | 'REPAIR_IN_PROGRESS' | 'PENDING_OPERATOR_CONFIRMATION';
+type MachineState = 'INACTIVE' | 'LOGGED_IN' | 'RUNNING' | 'STOPPED' | 'AWAITING_SUPPORT' | 'REPAIR_IN_PROGRESS' | 'PENDING_OPERATOR_CONFIRMATION' | 'PENDING_OPERATOR_ACTION';
 
 const stateConfig = {
   INACTIVE: {
     statusText: "Inactiva",
     statusColor: "bg-status-gray",
     statusIcon: PowerOff,
-    mainText: "Pase su tarjeta para iniciar sesión",
+    mainText: "Dashboard de Producción - Pase su tarjeta para iniciar sesión",
     isPulsing: false,
     nextState: 'LOGGED_IN',
   },
@@ -86,6 +87,14 @@ const stateConfig = {
     statusColor: "bg-status-orange",
     statusIcon: CheckCircle2,
     mainText: "Técnico ha finalizado. Confirme para reiniciar.",
+    isPulsing: true,
+    nextState: 'LOGGED_IN',
+  },
+  PENDING_OPERATOR_ACTION: {
+    statusText: "Pendiente de Operador",
+    statusColor: "bg-status-blue",
+    statusIcon: Hand,
+    mainText: "Tarea finalizada. Confirme para reiniciar.",
     isPulsing: true,
     nextState: 'LOGGED_IN',
   },
@@ -187,6 +196,10 @@ export function Dashboard() {
         setState('LOGGED_IN');
         setDowntimeStartTime(null);
         toast({ title: "Fin de Paro Confirmado", description: "La máquina está lista para reiniciar producción." });
+    } else if (state === 'PENDING_OPERATOR_ACTION') {
+      setState('LOGGED_IN');
+      setDowntimeStartTime(null);
+      toast({ title: "Confirmado por Operador", description: "La máquina está lista para reiniciar producción." });
     }
   };
 
@@ -216,8 +229,8 @@ export function Dashboard() {
     }
     
     if (category === 'Operación' || reason === 'Hora de Comida') {
-        toast({ title: `Paro por "${reason}" registrado.`, description: "Presione 'Iniciar Producción' para continuar." });
-        setState('LOGGED_IN');
+        toast({ title: `Paro por "${reason}" registrado.`, description: "Confirme para reanudar." });
+        setState('PENDING_OPERATOR_ACTION');
         return;
     }
     
@@ -279,12 +292,13 @@ export function Dashboard() {
                         currentConfig.isPulsing && 'soft-pulse'
                     )}>
                         <currentConfig.statusIcon className="h-[45%] w-[45%] text-white" />
-                        <p className="font-bold text-4xl text-white mt-2">{currentConfig.statusText}</p>
+                        <p className="font-bold text-4xl text-white mt-2 text-center">{currentConfig.statusText}</p>
                     </div>
                 </div>
-                <p className="font-semibold text-lg tracking-widest uppercase mt-4">{currentConfig.mainText}</p>
+                <p className="font-semibold text-lg tracking-widest uppercase mt-4 text-center">{currentConfig.mainText}</p>
             </div>
             
+            { state !== 'INACTIVE' &&
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base text-muted-foreground">
@@ -320,6 +334,12 @@ export function Dashboard() {
                     Confirmar Fin de Paro
                   </Button>
                 )}
+                 {state === 'PENDING_OPERATOR_ACTION' && (
+                  <Button onClick={handleStateAction} className="w-full font-bold bg-status-green hover:bg-status-green/90">
+                    <CheckCircle2 className="mr-2 h-5 w-5" />
+                    Confirmar para Reiniciar
+                  </Button>
+                )}
                 
                 <div className="flex justify-between text-sm pt-4">
                   <span className="font-semibold">Seguridad:</span>
@@ -329,6 +349,7 @@ export function Dashboard() {
                 </div>
               </CardContent>
             </Card>
+            }
           </div>
 
           {/* Columna Central */}
@@ -339,7 +360,7 @@ export function Dashboard() {
               description="Total de rollos procesados"
               icon={Package}
               change="+12%"
-              changeColor="text-status-green"
+              changeType="positive"
             />
             <KpiCard
               title="Eficiencia (Rendimiento General)"
@@ -347,7 +368,7 @@ export function Dashboard() {
               description="Producción vs. tiempo total"
               icon={TrendingUp}
               change="+3%"
-              changeColor="text-status-green"
+              changeType="positive"
             />
             <KpiCard
               title="Tiempo de Paro Total"
@@ -355,7 +376,7 @@ export function Dashboard() {
               description="Tiempo acumulado detenido"
               icon={Timer}
               change="+8%"
-              changeColor="text-destructive"
+              changeType="negative"
             />
              <KpiCard
               title="Etiquetas de Sacrificio Usadas"
@@ -363,7 +384,7 @@ export function Dashboard() {
               description="Correcciones de calidad aplicadas"
               icon={Archive}
               change="+2"
-              changeColor="text-status-orange"
+              changeType="neutral"
             />
             <KpiCard
               title="Porcentaje de Etiquetas Malas"
@@ -371,7 +392,7 @@ export function Dashboard() {
               description="Detectadas por el sistema"
               icon={BadgePercent}
               change="-0.1%"
-              changeColor="text-status-green"
+              changeType="positive"
             />
           </div>
 
@@ -402,6 +423,7 @@ export function Dashboard() {
         </div>
       </main>
       
+      { state !== 'INACTIVE' &&
       <footer className="flex items-center justify-end gap-4 p-4 bg-background border-t">
         <Button variant="destructive" className="font-bold">
             <BarChart className="mr-2 h-5 w-5" />
@@ -412,6 +434,7 @@ export function Dashboard() {
             Historial y Tendencias
         </Button>
       </footer>
+      }
     </>
   );
 }
