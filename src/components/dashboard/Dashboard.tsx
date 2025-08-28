@@ -8,7 +8,6 @@ import {
   PowerOff,
   BarChart,
   History,
-  Zap,
   Clock,
   TrendingUp,
   Square,
@@ -108,11 +107,12 @@ const productionData = [
 
 export function Dashboard() {
   const [state, setState] = useState<MachineState>('INACTIVE');
-  const [kpis, setKpis] = useState({ 
-    processedRolls: 9, 
+  const [kpis, setKpis] = useState({
+    processedRolls: 9,
     efficiency: 85.8,
-    labelsPerHour: 520,
-    badLabelsPercentage: 3 
+    totalDowntime: 4.5,
+    scrapLabels: 12,
+    badLabelsPercentage: 3,
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [downtimeData, setDowntimeData] = useState(initialDowntimeData);
@@ -137,8 +137,6 @@ export function Dashboard() {
     };
   }
 
-  const totalDowntime = downtimeData.reduce((acc, curr) => acc + curr.time, 0);
-
   useEffect(() => {
     let simulationInterval: NodeJS.Timeout | undefined;
 
@@ -148,10 +146,15 @@ export function Dashboard() {
           ...prevKpis,
           processedRolls: prevKpis.processedRolls + 1,
           efficiency: parseFloat((85 + Math.random() * 2 - 1).toFixed(1)),
-          labelsPerHour: 520 + Math.floor(Math.random() * 20 - 10),
+          scrapLabels: prevKpis.scrapLabels + (Math.random() > 0.8 ? 1 : 0),
           badLabelsPercentage: parseFloat(Math.max(0, (prevKpis.badLabelsPercentage + (Math.random() * 0.2 - 0.1))).toFixed(1)),
         }));
       }, 3000); // Update every 3 seconds
+    } else {
+       if (downtimeStartTime) {
+         // This can be improved to update every second
+         setKpis(prevKpis => ({...prevKpis, totalDowntime: prevKpis.totalDowntime + 0.05})); // Add 3s every 3s
+       }
     }
 
     return () => {
@@ -159,7 +162,7 @@ export function Dashboard() {
         clearInterval(simulationInterval);
       }
     };
-  }, [state]);
+  }, [state, downtimeStartTime]);
 
 
   const handleStateAction = () => {
@@ -189,8 +192,10 @@ export function Dashboard() {
 
   const handleRegisterDowntime = (reason: DowntimeReason, category: DowntimeCategory) => {
     if (downtimeStartTime) {
-      const duration = Math.round((Date.now() - downtimeStartTime) / 1000 / 60); // in minutes
+      const duration = (Date.now() - downtimeStartTime) / 1000 / 60; // in minutes
       
+      setKpis(prevKpis => ({...prevKpis, totalDowntime: prevKpis.totalDowntime + duration}));
+
       setDowntimeData(prevData => {
         const existingReasonIndex = prevData.findIndex(item => item.name === reason);
         if (existingReasonIndex > -1) {
@@ -210,8 +215,8 @@ export function Dashboard() {
       return;
     }
     
-    if (category === 'Operación') {
-        toast({ title: `Paro por "${reason}" registrado.`, description: "La máquina está en pausa. Presione 'Iniciar Producción' para continuar." });
+    if (category === 'Operación' || reason === 'Hora de Comida') {
+        toast({ title: `Paro por "${reason}" registrado.`, description: "Presione 'Iniciar Producción' para continuar." });
         setState('LOGGED_IN');
         return;
     }
@@ -265,17 +270,19 @@ export function Dashboard() {
       <main className="flex-1 p-6">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Columna Izquierda */}
-          <div className="lg:col-span-1 space-y-6">
-             <div className="flex flex-col items-center justify-center text-center h-52 cursor-pointer" onClick={handleStateAction}>
-                <div className={cn(
-                    "flex flex-col h-48 w-48 items-center justify-center rounded-full mb-4 transition-colors", 
-                    currentConfig.statusColor,
-                    currentConfig.isPulsing && 'soft-pulse'
-                  )}>
-                    <currentConfig.statusIcon className="h-20 w-20 text-white" />
-                    <p className="font-bold text-2xl text-white mt-2">{currentConfig.statusText}</p>
+          <div className="lg:col-span-1 flex flex-col gap-6">
+            <div className="flex flex-col flex-grow items-center justify-center text-center cursor-pointer p-4" onClick={handleStateAction}>
+                <div className="w-full aspect-square flex items-center justify-center">
+                    <div className={cn(
+                        "flex flex-col h-full w-full items-center justify-center rounded-full transition-colors", 
+                        currentConfig.statusColor,
+                        currentConfig.isPulsing && 'soft-pulse'
+                    )}>
+                        <currentConfig.statusIcon className="h-[45%] w-[45%] text-white" />
+                        <p className="font-bold text-4xl text-white mt-2">{currentConfig.statusText}</p>
+                    </div>
                 </div>
-                <p className="font-semibold text-lg tracking-widest uppercase">{currentConfig.mainText}</p>
+                <p className="font-semibold text-lg tracking-widest uppercase mt-4">{currentConfig.mainText}</p>
             </div>
             
             <Card>
@@ -323,28 +330,39 @@ export function Dashboard() {
           {/* Columna Central */}
           <div className="lg:col-span-1 space-y-6">
             <KpiCard
-              title="Etiquetas Producidas"
+              title="Producción del Turno"
               value={kpis.processedRolls.toLocaleString()}
-              description="Total del turno actual"
-              progress={kpis.processedRolls / 100 * 100}
+              description="Total de rollos procesados"
               icon={Package}
               change="+12%"
             />
             <KpiCard
-              title="Etiquetas por Hora"
-              value={kpis.labelsPerHour.toLocaleString()}
-              description="Velocidad actual"
-              progress={kpis.labelsPerHour / 1000 * 100}
-              icon={Clock}
-              change="+8%"
-            />
-            <KpiCard
-              title="Eficiencia"
+              title="Eficiencia (Rendimiento General)"
               value={`${kpis.efficiency}%`}
-              description="Rendimiento general"
-              progress={kpis.efficiency}
+              description="Producción vs. tiempo total"
               icon={TrendingUp}
               change="+3%"
+            />
+            <KpiCard
+              title="Tiempo de Paro Total"
+              value={`${kpis.totalDowntime.toFixed(1)} min`}
+              description="Tiempo acumulado detenido"
+              icon={Timer}
+              change="+8%"
+            />
+             <KpiCard
+              title="Etiquetas de Sacrificio Usadas"
+              value={kpis.scrapLabels.toLocaleString()}
+              description="Correcciones de calidad aplicadas"
+              icon={Archive}
+              change="+2"
+            />
+            <KpiCard
+              title="Porcentaje de Etiquetas Malas"
+              value={`${kpis.badLabelsPercentage}%`}
+              description="Detectadas por el sistema"
+              icon={BadgePercent}
+              change="-0.1%"
             />
           </div>
 
