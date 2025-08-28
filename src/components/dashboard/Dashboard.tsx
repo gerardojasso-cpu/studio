@@ -346,6 +346,12 @@ export function Dashboard() {
               icon={TrendingUp}
               change="+3%"
             />
+          </div>
+
+
+          {/* Columna Derecha */}
+          <div className="lg:col-span-1 space-y-6">
+             <DowntimeChart data={downtimeData} />
              <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
@@ -365,12 +371,6 @@ export function Dashboard() {
                 </ChartContainer>
               </CardContent>
             </Card>
-          </div>
-
-
-          {/* Columna Derecha */}
-          <div className="lg:col-span-1 space-y-6">
-             <DowntimeChart data={downtimeData} />
           </div>
         </div>
       </main>
