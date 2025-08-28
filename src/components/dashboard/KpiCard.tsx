@@ -23,7 +23,7 @@ export function KpiCard({ title, value, description, icon: Icon, change, changeC
       </CardHeader>
       <CardContent>
         <div className="text-5xl font-extrabold">{value}</div>
-        <p className="text-xs text-muted-foreground">{description}</p>
+        <p className="text-xs">{description}</p>
       </CardContent>
     </Card>
   );
