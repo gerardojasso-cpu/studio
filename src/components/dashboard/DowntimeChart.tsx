@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/chart";
 
 export interface DowntimeData {
-  reason: string;
+  name: string;
   time: number;
 }
 
@@ -25,8 +25,8 @@ interface DowntimeChartProps {
 
 const chartConfig = {
   time: {
-    label: "Tiempo (h)",
-    color: "hsl(var(--destructive))",
+    label: "Tiempo (min)",
+    color: "hsl(var(--primary))",
   },
 } satisfies ChartConfig;
 
@@ -38,26 +38,25 @@ export function DowntimeChart({ data }: DowntimeChartProps) {
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="min-h-[150px] w-full">
-          <ResponsiveContainer width="100%" height={150}>
+          <ResponsiveContainer width="100%" height={200}>
             <BarChart
               accessibilityLayer
               data={data}
-              layout="vertical"
-              margin={{ left: 10, right: 30 }}
+              layout="horizontal"
+              margin={{ left: -20, right: 20 }}
             >
-              <CartesianGrid horizontal={false} />
+              <CartesianGrid vertical={false} />
               <YAxis
-                type="category"
-                dataKey="reason"
+                type="number"
+                dataKey="time"
                 tickLine={false}
                 axisLine={false}
                 tickMargin={5}
-                width={80}
                 className="text-xs"
               />
               <XAxis
-                type="number"
-                dataKey="time"
+                type="category"
+                dataKey="name"
                 tickLine={false}
                 axisLine={false}
                 tickMargin={5}
@@ -67,7 +66,7 @@ export function DowntimeChart({ data }: DowntimeChartProps) {
                 cursor={false}
                 content={<ChartTooltipContent indicator="line" />}
               />
-              <Bar dataKey="time" fill="var(--color-time)" radius={4} />
+              <Bar dataKey="time" fill="var(--color-time)" radius={4} barSize={50} />
             </BarChart>
           </ResponsiveContainer>
         </ChartContainer>

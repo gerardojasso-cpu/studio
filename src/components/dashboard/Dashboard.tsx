@@ -16,7 +16,10 @@ import {
   Package,
   Timer,
   Archive,
-  BadgePercent
+  BadgePercent,
+  Settings,
+  User,
+  Dot
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +28,8 @@ import { useToast } from "@/hooks/use-toast";
 import { KpiCard } from "./KpiCard";
 import { DowntimeChart } from "./DowntimeChart";
 import { cn } from "@/lib/utils";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
+import { ChartContainer } from "@/components/ui/chart";
 
 type MachineState = 'INACTIVE' | 'LOGGED_IN' | 'RUNNING' | 'STOPPED' | 'AWAITING_SUPPORT' | 'REPAIR_IN_PROGRESS' | 'PENDING_OPERATOR_CONFIRMATION';
 
@@ -48,7 +53,7 @@ const stateConfig = {
   RUNNING: {
     statusText: "Funcionando",
     statusColor: "bg-status-green",
-    statusIcon: Zap,
+    statusIcon: Settings,
     mainText: "Producción Activa",
     isPulsing: false,
     nextState: 'STOPPED',
@@ -88,19 +93,26 @@ const stateConfig = {
 };
 
 const initialDowntimeData = [
-    { reason: "Mantenimiento", time: 3 },
-    { reason: "Falta Material", time: 1.5 },
+    { name: "Mantenimiento", time: 3 },
+    { name: "Falta Material", time: 1.5 },
 ];
 
-const operationReasons: DowntimeReason[] = ['Limpieza', 'Descanso de Operador', 'Ajuste de la Máquina', 'Fin de Turno', 'Hora de Comida'];
+const productionData = [
+    { hour: "06:00", production: 450 },
+    { hour: "07:00", production: 520 },
+    { hour: "08:00", production: 510 },
+    { hour: "09:00", production: 550 },
+    { hour: "10:00", production: 200 },
+    { hour: "11:00", production: 580 },
+]
 
 export function Dashboard() {
   const [state, setState] = useState<MachineState>('INACTIVE');
   const [kpis, setKpis] = useState({ 
-    processedRolls: 25, 
-    efficiency: 92, 
-    sacrificeLabelsUsed: 12, 
-    badLabelsPercentage: 2 
+    processedRolls: 9, 
+    efficiency: 85.8,
+    labelsPerHour: 520,
+    badLabelsPercentage: 3 
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [downtimeData, setDowntimeData] = useState(initialDowntimeData);
@@ -118,6 +130,11 @@ export function Dashboard() {
       statusText: `Esperando a ${awaitingDepartment}`,
       mainText: `Notificación enviada a ${awaitingDepartment}.`
     };
+  } else if (state === 'RUNNING') {
+     currentConfig = {
+      ...currentConfig,
+      mainText: `PRODUCCIÓN ACTIVA`,
+    };
   }
 
   const totalDowntime = downtimeData.reduce((acc, curr) => acc + curr.time, 0);
@@ -128,9 +145,10 @@ export function Dashboard() {
     if (state === 'RUNNING') {
       simulationInterval = setInterval(() => {
         setKpis(prevKpis => ({
+          ...prevKpis,
           processedRolls: prevKpis.processedRolls + 1,
-          efficiency: parseFloat((92 + Math.random() * 2 - 1).toFixed(1)),
-          sacrificeLabelsUsed: prevKpis.sacrificeLabelsUsed + (Math.random() > 0.9 ? 1 : 0),
+          efficiency: parseFloat((85 + Math.random() * 2 - 1).toFixed(1)),
+          labelsPerHour: 520 + Math.floor(Math.random() * 20 - 10),
           badLabelsPercentage: parseFloat(Math.max(0, (prevKpis.badLabelsPercentage + (Math.random() * 0.2 - 0.1))).toFixed(1)),
         }));
       }, 3000); // Update every 3 seconds
@@ -174,13 +192,13 @@ export function Dashboard() {
       const duration = Math.round((Date.now() - downtimeStartTime) / 1000 / 60); // in minutes
       
       setDowntimeData(prevData => {
-        const existingReasonIndex = prevData.findIndex(item => item.reason === reason);
+        const existingReasonIndex = prevData.findIndex(item => item.name === reason);
         if (existingReasonIndex > -1) {
           const newData = [...prevData];
           newData[existingReasonIndex] = { ...newData[existingReasonIndex], time: newData[existingReasonIndex].time + duration };
           return newData;
         }
-        return [...prevData, { reason, time: duration }];
+        return [...prevData, { name: reason, time: duration }];
       });
     }
     
@@ -193,9 +211,8 @@ export function Dashboard() {
     }
     
     if (category === 'Operación') {
-        setDowntimeStartTime(null);
-        toast({ title: `Paro por "${reason}" registrado.`, description: "La máquina está en pausa. Confirme para reiniciar." });
-        setState('PENDING_OPERATOR_CONFIRMATION');
+        toast({ title: `Paro por "${reason}" registrado.`, description: "La máquina está en pausa. Presione 'Iniciar Producción' para continuar." });
+        setState('LOGGED_IN');
         return;
     }
     
@@ -219,51 +236,59 @@ export function Dashboard() {
         onClose={() => setIsModalOpen(false)}
       />
       
-      <header className="flex h-20 items-center justify-between bg-[#1f2937] px-6 text-white">
+      <header className="flex h-20 items-center justify-between bg-[#111827] px-6 text-white">
         <div>
-          <h1 className="text-xl font-bold">Dashboard de Producción Avery Dennison</h1>
-          <p className="text-sm text-gray-300">Línea de Etiquetas - Estación 01</p>
+          <h1 className="text-xl font-bold">Dashboard de Producción</h1>
+          <p className="text-sm text-gray-400 flex items-center gap-2">
+            Línea de Etiquetas - Estación 01
+            <span className="flex items-center gap-1 text-status-green">
+              <Dot size={24} className="-ml-1" /> Sistema Conectado
+            </span>
+          </p>
         </div>
         <div className="flex items-center gap-4">
           {state !== 'INACTIVE' && (
             <>
-            <div className="text-right">
-              <p className="font-semibold">Operador: Juan Pérez</p>
-              <p className="text-xs text-gray-300">Turno 1 - 06:00 AM</p>
+            <div className="text-right flex items-center gap-3">
+              <User className="h-5 w-5"/>
+              <div>
+                <p className="font-semibold">Operador: Juan Pérez</p>
+                <p className="text-xs text-gray-400">Turno 1 - 06:00 AM</p>
+              </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-white hover:bg-gray-700">
-                <PowerOff className="h-5 w-5" />
-            </Button>
+            <div className="h-10 w-10 rounded-full bg-slate-300"/>
             </>
           )}
         </div>
       </header>
       
       <main className="flex-1 p-6">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Columna Izquierda */}
-          <div className="lg:col-span-1">
-            <Card className="mb-6 flex flex-col items-center justify-center text-center h-52 cursor-pointer hover:bg-slate-50 transition-colors" onClick={handleStateAction}>
+          <div className="lg:col-span-1 space-y-6">
+             <div className="flex flex-col items-center justify-center text-center h-52 cursor-pointer" onClick={handleStateAction}>
                 <div className={cn(
-                    "flex h-32 w-32 items-center justify-center rounded-full mb-4 transition-colors", 
+                    "flex flex-col h-48 w-48 items-center justify-center rounded-full mb-4 transition-colors", 
                     currentConfig.statusColor,
                     currentConfig.isPulsing && 'soft-pulse'
                   )}>
-                    <currentConfig.statusIcon className="h-24 w-24 text-white" />
+                    <currentConfig.statusIcon className="h-20 w-20 text-white" />
+                    <p className="font-bold text-2xl text-white mt-2">{currentConfig.statusText}</p>
                 </div>
-                <p className="font-semibold text-lg">{currentConfig.mainText}</p>
-            </Card>
+                <p className="font-semibold text-lg tracking-widest uppercase">{currentConfig.mainText}</p>
+            </div>
+            
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Wrench className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-base text-muted-foreground">
+                  <PlayCircle className="h-5 w-5" />
                   Control de Máquina
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <p className="font-bold text-lg">{currentConfig.statusText}</p>
-                  <p className="text-sm text-muted-foreground">{currentConfig.mainText}</p>
+                <div className="bg-status-green/10 text-status-green p-4 rounded-lg">
+                  <p className="font-bold text-lg">Máquina En Funcionamiento</p>
+                  <p className="text-sm">Producción activa en curso</p>
                 </div>
 
                 {state === 'LOGGED_IN' && (
@@ -275,7 +300,7 @@ export function Dashboard() {
                 {state === 'RUNNING' && (
                   <Button onClick={handleStateAction} className="w-full font-bold bg-primary hover:bg-primary/90">
                     <Square className="mr-2 h-5 w-5" />
-                    Detener Producción
+                    Detener Máquina
                   </Button>
                 )}
                 {state === 'PENDING_OPERATOR_CONFIRMATION' && (
@@ -285,7 +310,7 @@ export function Dashboard() {
                   </Button>
                 )}
                 
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-sm pt-4">
                   <span className="font-semibold">Seguridad:</span>
                   <span className="flex items-center gap-1 font-semibold text-status-green">
                     <CheckCircle2 className="h-4 w-4" /> Sistemas OK
@@ -296,44 +321,50 @@ export function Dashboard() {
           </div>
 
           {/* Columna Central */}
-          <div className="lg:col-span-2 grid grid-cols-2 grid-rows-2 gap-6">
+          <div className="lg:col-span-1 space-y-6">
             <KpiCard
-              title="Producción del Turno"
+              title="Etiquetas Producidas"
               value={kpis.processedRolls.toLocaleString()}
-              description="Total de rollos procesados"
+              description="Total del turno actual"
               progress={kpis.processedRolls / 100 * 100}
               icon={Package}
+              change="+12%"
             />
             <KpiCard
-              title="Eficiencia (Rendimiento)"
+              title="Etiquetas por Hora"
+              value={kpis.labelsPerHour.toLocaleString()}
+              description="Velocidad actual"
+              progress={kpis.labelsPerHour / 1000 * 100}
+              icon={Clock}
+              change="+8%"
+            />
+            <KpiCard
+              title="Eficiencia"
               value={`${kpis.efficiency}%`}
-              description="Rendimiento general del turno"
+              description="Rendimiento general"
               progress={kpis.efficiency}
               icon={TrendingUp}
+              change="+3%"
             />
-            <KpiCard
-              title="Tiempo de Paro Total"
-              value={`${totalDowntime} min`}
-              description="Tiempo acumulado de paros"
-              progress={(totalDowntime / 480) * 100} // Assuming 8-hour shift
-              icon={Timer}
-            />
-            <KpiCard
-              title="Etiquetas de Sacrificio"
-              value={kpis.sacrificeLabelsUsed.toLocaleString()}
-              description="Etiquetas usadas para corrección"
-              progress={kpis.sacrificeLabelsUsed / 100 * 100}
-              icon={Archive}
-            />
-            <div className="col-span-2">
-              <KpiCard
-                title="Porcentaje de Etiquetas Malas"
-                value={`${kpis.badLabelsPercentage}%`}
-                description="Etiquetas defectuosas detectadas"
-                progress={kpis.badLabelsPercentage}
-                icon={BadgePercent}
-              />
-            </div>
+             <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  Producción por Hora
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer config={{}} className="min-h-[150px] w-full">
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart data={productionData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="hour" className="text-xs"/>
+                      <YAxis className="text-xs" domain={[0, 600]}/>
+                      <Line type="monotone" dataKey="production" stroke="hsl(var(--status-green))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--status-green))" }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              </CardContent>
+            </Card>
           </div>
 
 
@@ -344,12 +375,12 @@ export function Dashboard() {
         </div>
       </main>
       
-      <footer className="flex items-center justify-end gap-4 p-4 bg-white border-t">
-        <Button variant="outline" className="font-bold">
+      <footer className="flex items-center justify-end gap-4 p-4 bg-background border-t">
+        <Button variant="destructive" className="font-bold">
             <BarChart className="mr-2 h-5 w-5" />
             Análisis de Paros
         </Button>
-        <Button className="font-bold bg-gray-700 hover:bg-gray-800 text-white">
+        <Button className="font-bold bg-status-blue hover:bg-status-blue/90 text-white">
             <History className="mr-2 h-5 w-5" />
             Historial y Tendencias
         </Button>
