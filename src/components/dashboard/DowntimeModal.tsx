@@ -11,7 +11,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { AlertTriangle, Wrench, Package, Search, User, ArrowLeft } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 export type DowntimeReason = 
   // Mantenimiento
@@ -34,11 +33,11 @@ export type DowntimeReason =
   'Fin de Turno' | 
   'Hora de Comida';
 
-type Category = 'Mantenimiento' | 'Calidad' | 'Suministros' | 'Operación';
+export type Category = 'Mantenimiento' | 'Calidad' | 'Suministros' | 'Operación';
 
 interface DowntimeModalProps {
   isOpen: boolean;
-  onRegister: (reason: DowntimeReason) => void;
+  onRegister: (reason: DowntimeReason, category: Category) => void;
   onClose: () => void;
 }
 
@@ -66,8 +65,10 @@ export function DowntimeModal({ isOpen, onRegister, onClose }: DowntimeModalProp
   };
 
   const handleReasonSelect = (reason: DowntimeReason) => {
-    onRegister(reason);
-    resetModal();
+    if (selectedCategory) {
+      onRegister(reason, selectedCategory);
+      resetModal();
+    }
   };
   
   const resetModal = () => {

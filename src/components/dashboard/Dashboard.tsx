@@ -5,7 +5,6 @@ import {
   CheckCircle2, 
   AlertTriangle, 
   PlayCircle, 
-  Power, 
   PowerOff,
   BarChart,
   History,
@@ -21,7 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DowntimeModal, type DowntimeReason } from "./DowntimeModal";
+import { DowntimeModal, type DowntimeReason, type Category as DowntimeCategory } from "./DowntimeModal";
 import { useToast } from "@/hooks/use-toast";
 import { KpiCard } from "./KpiCard";
 import { DowntimeChart } from "./DowntimeChart";
@@ -63,7 +62,7 @@ const stateConfig = {
     nextState: 'AWAITING_SUPPORT',
   },
   AWAITING_SUPPORT: {
-    statusText: "Esperando a Mantenimiento",
+    statusText: "Esperando Soporte",
     statusColor: "bg-status-orange",
     statusIcon: Clock,
     mainText: "Esperando respuesta del equipo de soporte.",
@@ -93,7 +92,6 @@ const initialDowntimeData = [
     { reason: "Falta Material", time: 1.5 },
 ];
 
-const maintenanceReasons: DowntimeReason[] = ['Problema Mecánico', 'Problema Eléctrico', 'Mantenimiento Preventivo', 'Falla de Neumática/Hidráulica'];
 const operationReasons: DowntimeReason[] = ['Limpieza', 'Descanso de Operador', 'Ajuste de la Máquina', 'Fin de Turno', 'Hora de Comida'];
 
 export function Dashboard() {
@@ -107,10 +105,20 @@ export function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [downtimeData, setDowntimeData] = useState(initialDowntimeData);
   const [downtimeStartTime, setDowntimeStartTime] = useState<number | null>(null);
+  const [awaitingDepartment, setAwaitingDepartment] = useState<DowntimeCategory | null>(null);
 
   const { toast } = useToast();
   
-  const currentConfig = stateConfig[state];
+  let currentConfig = stateConfig[state];
+
+  // Dynamic mainText for AWAITING_SUPPORT state
+  if (state === 'AWAITING_SUPPORT' && awaitingDepartment) {
+    currentConfig = {
+      ...currentConfig,
+      statusText: `Esperando a ${awaitingDepartment}`,
+      mainText: `Notificación enviada a ${awaitingDepartment}.`
+    };
+  }
 
   const totalDowntime = downtimeData.reduce((acc, curr) => acc + curr.time, 0);
 
@@ -161,7 +169,7 @@ export function Dashboard() {
     }
   };
 
-  const handleRegisterDowntime = (reason: DowntimeReason) => {
+  const handleRegisterDowntime = (reason: DowntimeReason, category: DowntimeCategory) => {
     if (downtimeStartTime) {
       const duration = Math.round((Date.now() - downtimeStartTime) / 1000 / 60); // in minutes
       
@@ -183,20 +191,17 @@ export function Dashboard() {
       toast({ title: "Fin de turno registrado", description: "Sesión cerrada." });
       return;
     }
-    if (operationReasons.includes(reason) && reason !== 'Fin de Turno') {
-        setState('LOGGED_IN'); 
+    
+    if (category === 'Operación') {
         setDowntimeStartTime(null);
         toast({ title: `Paro por "${reason}" registrado.`, description: "La máquina está en pausa. Confirme para reiniciar." });
         setState('PENDING_OPERATOR_CONFIRMATION');
         return;
     }
     
-    let department = "Soporte";
-    if (maintenanceReasons.includes(reason)) {
-      department = "Mantenimiento";
-    }
+    setAwaitingDepartment(category);
     setState('AWAITING_SUPPORT');
-    toast({ title: "Paro Registrado", description: `Motivo: ${reason}. Se ha notificado a ${department}.` });
+    toast({ title: "Paro Registrado", description: `Motivo: ${reason}. Se ha notificado a ${category}.` });
   };
     
   const handleLogout = () => {
@@ -251,7 +256,7 @@ export function Dashboard() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <Power className="h-5 w-5" />
+                  <Wrench className="h-5 w-5" />
                   Control de Máquina
                 </CardTitle>
               </CardHeader>
@@ -352,5 +357,3 @@ export function Dashboard() {
     </>
   );
 }
-
-    
