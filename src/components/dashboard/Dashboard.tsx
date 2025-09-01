@@ -19,8 +19,7 @@ import {
   BadgePercent,
   Settings,
   User,
-  Dot,
-  Hand
+  Dot
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,7 +31,7 @@ import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 
-type MachineState = 'INACTIVE' | 'LOGGED_IN' | 'RUNNING' | 'STOPPED' | 'AWAITING_SUPPORT' | 'REPAIR_IN_PROGRESS' | 'PENDING_OPERATOR_CONFIRMATION' | 'PENDING_OPERATOR_ACTION';
+type MachineState = 'INACTIVE' | 'LOGGED_IN' | 'RUNNING' | 'STOPPED' | 'AWAITING_SUPPORT' | 'REPAIR_IN_PROGRESS' | 'PENDING_OPERATOR_CONFIRMATION';
 
 interface Operator {
   name: string;
@@ -91,17 +90,9 @@ const stateConfig = {
   },
   PENDING_OPERATOR_CONFIRMATION: {
     statusText: "Solucionado, Pendiente de Operador",
-    statusColor: "bg-status-orange",
-    statusIcon: CheckCircle2,
-    mainText: "Técnico ha finalizado. Confirme para reiniciar.",
-    isPulsing: true,
-    nextState: 'LOGGED_IN',
-  },
-  PENDING_OPERATOR_ACTION: {
-    statusText: "Pendiente de Operador",
     statusColor: "bg-status-blue",
-    statusIcon: Hand,
-    mainText: "Tarea finalizada. Confirme para reiniciar.",
+    statusIcon: CheckCircle2,
+    mainText: "Técnico ha finalizado. Pase su tarjeta para confirmar",
     isPulsing: true,
     nextState: 'LOGGED_IN',
   },
@@ -166,7 +157,12 @@ export function Dashboard() {
         try {
           const data = JSON.parse(message.toString());
           if (data && data.name && data.shift && data.department) {
-            handleLogin(data);
+            if (state === 'INACTIVE' || state === 'PENDING_OPERATOR_CONFIRMATION') {
+               handleLogin(data);
+            } else if (state === 'AWAITING_SUPPORT' && data.department === awaitingDepartment) {
+               setState('REPAIR_IN_PROGRESS');
+               toast({ title: "Técnico ha llegado", description: `Técnico: ${data.name} de ${data.department}.` });
+            }
           } else {
              console.warn("Mensaje de login recibido con formato incorrecto.");
           }
@@ -186,7 +182,7 @@ export function Dashboard() {
         mqttClient.end();
       }
     };
-  }, []);
+  }, [state, awaitingDepartment]);
 
   useEffect(() => {
     if (client && client.connected) {
@@ -255,6 +251,11 @@ export function Dashboard() {
       setOperator(operatorData);
       setState('LOGGED_IN');
       toast({ title: "Inicio de sesión exitoso", description: `Operador: ${operatorData.name}` });
+    } else if (state === 'PENDING_OPERATOR_CONFIRMATION') {
+        // Here we could validate if the user logging back in is the original operator, but for now we'll allow any.
+        setState('LOGGED_IN');
+        setDowntimeStartTime(null);
+        toast({ title: "Fin de Paro Confirmado", description: "La máquina está lista para reiniciar producción." });
     }
   };
 
@@ -267,20 +268,9 @@ export function Dashboard() {
       setState('STOPPED');
       setDowntimeStartTime(Date.now());
       setTimeout(() => setIsModalOpen(true), 500);
-    } else if (state === 'AWAITING_SUPPORT') {
-        setState('REPAIR_IN_PROGRESS');
-        toast({ title: "Técnico ha llegado", description: "Reparación en curso." });
     } else if (state === 'REPAIR_IN_PROGRESS') {
         setState('PENDING_OPERATOR_CONFIRMATION');
         toast({ title: "Reparación Finalizada", description: "Pendiente de confirmación del operador." });
-    } else if (state === 'PENDING_OPERATOR_CONFIRMATION') {
-        setState('LOGGED_IN');
-        setDowntimeStartTime(null);
-        toast({ title: "Fin de Paro Confirmado", description: "La máquina está lista para reiniciar producción." });
-    } else if (state === 'PENDING_OPERATOR_ACTION') {
-      setState('LOGGED_IN');
-      setDowntimeStartTime(null);
-      toast({ title: "Confirmado por Operador", description: "La máquina está lista para reiniciar producción." });
     }
   };
 
@@ -302,19 +292,6 @@ export function Dashboard() {
     }
     
     setIsModalOpen(false);
-
-    if (reason === 'Fin de Turno') {
-      setState('INACTIVE');
-      setOperator(null);
-      toast({ title: "Fin de turno registrado", description: "Sesión cerrada." });
-      return;
-    }
-    
-    if (category === 'Operación' || reason === 'Hora de Comida') {
-        toast({ title: `Paro por "${reason}" registrado.`, description: "Confirme para reanudar." });
-        setState('PENDING_OPERATOR_ACTION');
-        return;
-    }
     
     setAwaitingDepartment(category);
     setState('AWAITING_SUPPORT');
@@ -409,16 +386,10 @@ export function Dashboard() {
                     Detener Máquina
                   </Button>
                 )}
-                {state === 'PENDING_OPERATOR_CONFIRMATION' && (
-                  <Button onClick={handleStateAction} className="w-full font-bold bg-status-green hover:bg-status-green/90">
-                    <CheckCircle2 className="mr-2 h-5 w-5" />
-                    Confirmar Fin de Paro
-                  </Button>
-                )}
-                 {state === 'PENDING_OPERATOR_ACTION' && (
-                  <Button onClick={handleStateAction} className="w-full font-bold bg-status-green hover:bg-status-green/90">
-                    <CheckCircle2 className="mr-2 h-5 w-5" />
-                    Confirmar para Reiniciar
+                {state === 'REPAIR_IN_PROGRESS' && (
+                  <Button onClick={handleStateAction} className="w-full font-bold bg-status-yellow hover:bg-status-yellow/90">
+                    <Wrench className="mr-2 h-5 w-5" />
+                    Finalizar Reparación
                   </Button>
                 )}
                 
