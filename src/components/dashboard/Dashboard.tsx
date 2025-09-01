@@ -84,7 +84,7 @@ const stateConfig = {
     statusText: "Reparación en Curso",
     statusColor: "bg-status-yellow",
     statusIcon: Wrench,
-    mainText: "Técnico trabajando en la máquina.",
+    mainText: "Técnico trabajando en la máquina. Pase su tarjeta para finalizar.",
     isPulsing: false,
     nextState: 'PENDING_OPERATOR_CONFIRMATION',
   },
@@ -178,10 +178,13 @@ export function Dashboard() {
                if (state === 'INACTIVE') {
                  handleInitialLogin(data);
                } else if (state === 'PENDING_OPERATOR_CONFIRMATION') {
-                 handleLogin(data);
+                 handleConfirmationLogin(data);
                } else if (state === 'AWAITING_SUPPORT' && data.department === awaitingDepartment) {
                  setState('REPAIR_IN_PROGRESS');
                  toast({ title: "Técnico ha llegado", description: `Técnico: ${data.name} de ${data.department}.` });
+              } else if (state === 'REPAIR_IN_PROGRESS' && data.department === 'Mantenimiento') {
+                  setState('PENDING_OPERATOR_CONFIRMATION');
+                  toast({ title: "Reparación Finalizada", description: `Pendiente de confirmación del operador. Técnico: ${data.name}` });
               }
             } else {
                console.warn("Mensaje de login recibido con formato incorrecto.");
@@ -296,19 +299,12 @@ export function Dashboard() {
     }
   };
 
-  const handleLogin = (operatorData: Operator) => {
+  const handleConfirmationLogin = (operatorData: Operator) => {
       if (state === 'PENDING_OPERATOR_CONFIRMATION') {
         // Here we could validate if the user logging back in is the original operator, but for now we'll allow any.
         setState('LOGGED_IN');
         setDowntimeStartTime(null);
         toast({ title: "Fin de Paro Confirmado", description: "La máquina está lista para reiniciar producción." });
-    }
-  };
-
-  const handleStateAction = () => {
-    if (state === 'REPAIR_IN_PROGRESS') {
-        setState('PENDING_OPERATOR_CONFIRMATION');
-        toast({ title: "Reparación Finalizada", description: "Pendiente de confirmación del operador." });
     }
   };
 
@@ -411,13 +407,6 @@ export function Dashboard() {
                     {state === 'RUNNING' ? 'Producción activa en curso' : 'Esperando acción del operador o de la máquina'}
                   </p>
                 </div>
-
-                {state === 'REPAIR_IN_PROGRESS' && (
-                  <Button onClick={handleStateAction} className="w-full font-bold bg-status-yellow hover:bg-status-yellow/90">
-                    <Wrench className="mr-2 h-5 w-5" />
-                    Finalizar Reparación
-                  </Button>
-                )}
                 
                 <div className="flex justify-between text-sm pt-4">
                   <span className="font-semibold">Seguridad:</span>
@@ -516,5 +505,7 @@ export function Dashboard() {
     </>
   );
 }
+
+    
 
     
