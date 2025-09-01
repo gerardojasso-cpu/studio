@@ -117,6 +117,8 @@ const productionData = [
 const MQTT_BROKER_URL = 'wss://broker.emqx.io:8084/mqtt';
 const LOGIN_TOPIC = 'avery/station1/login';
 const STATUS_TOPIC = 'avery/station1/status';
+const INTERLOCK_TOPIC = 'avery/station1/interlock';
+
 
 export function Dashboard() {
   const [state, setState] = useState<MachineState>('INACTIVE');
@@ -157,9 +159,11 @@ export function Dashboard() {
         try {
           const data = JSON.parse(message.toString());
           if (data && data.name && data.shift && data.department) {
-            if (state === 'INACTIVE' || state === 'PENDING_OPERATOR_CONFIRMATION') {
+             if (state === 'INACTIVE') {
+               handleInitialLogin(data);
+             } else if (state === 'PENDING_OPERATOR_CONFIRMATION') {
                handleLogin(data);
-            } else if (state === 'AWAITING_SUPPORT' && data.department === awaitingDepartment) {
+             } else if (state === 'AWAITING_SUPPORT' && data.department === awaitingDepartment) {
                setState('REPAIR_IN_PROGRESS');
                toast({ title: "Técnico ha llegado", description: `Técnico: ${data.name} de ${data.department}.` });
             }
@@ -196,6 +200,15 @@ export function Dashboard() {
           console.error('Error al publicar estado:', err);
         } else {
           console.log(`Estado '${state}' publicado en ${STATUS_TOPIC}`);
+        }
+      });
+
+      const interlockValue = (state === 'LOGGED_IN' || state === 'REPAIR_IN_PROGRESS') ? '1' : '0';
+      client.publish(INTERLOCK_TOPIC, interlockValue, (err) => {
+        if (err) {
+          console.error('Error al publicar interlock:', err);
+        } else {
+          console.log(`Interlock '${interlockValue}' publicado en ${INTERLOCK_TOPIC}`);
         }
       });
     }
@@ -245,13 +258,18 @@ export function Dashboard() {
     };
   }, [state, downtimeStartTime]);
 
+  const handleInitialLogin = (userData: Operator) => {
+    setOperator(userData);
+    toast({ title: "Inicio de sesión exitoso", description: `${userData.department}: ${userData.name}` });
+    if (userData.department === 'Mantenimiento') {
+      setState('REPAIR_IN_PROGRESS');
+    } else { // Assume "Produccion" or other operator roles
+      setState('LOGGED_IN');
+    }
+  };
 
   const handleLogin = (operatorData: Operator) => {
-    if (state === 'INACTIVE') {
-      setOperator(operatorData);
-      setState('LOGGED_IN');
-      toast({ title: "Inicio de sesión exitoso", description: `Operador: ${operatorData.name}` });
-    } else if (state === 'PENDING_OPERATOR_CONFIRMATION') {
+      if (state === 'PENDING_OPERATOR_CONFIRMATION') {
         // Here we could validate if the user logging back in is the original operator, but for now we'll allow any.
         setState('LOGGED_IN');
         setDowntimeStartTime(null);
@@ -329,8 +347,8 @@ export function Dashboard() {
             <>
             <div className="text-right flex items-center gap-3">
               <div>
-                <p className="font-semibold">Operador: {operator.name}</p>
-                <p className="text-xs text-gray-400">Turno {operator.shift} - {operator.department}</p>
+                <p className="font-semibold">{operator.department}: {operator.name}</p>
+                <p className="text-xs text-gray-400">Turno {operator.shift}</p>
               </div>
             </div>
             </>
@@ -374,7 +392,7 @@ export function Dashboard() {
                   </p>
                 </div>
 
-                {state === 'LOGGED_IN' && (
+                {state === 'LOGGED_IN' && operator?.department !== 'Mantenimiento' && (
                   <Button onClick={handleStateAction} className="w-full font-bold bg-status-green hover:bg-status-green/90">
                     <PlayCircle className="mr-2 h-5 w-5" />
                     Iniciar Producción
@@ -490,7 +508,5 @@ export function Dashboard() {
     </>
   );
 }
-
-    
 
     
