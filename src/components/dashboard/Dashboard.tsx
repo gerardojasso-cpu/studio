@@ -87,11 +87,11 @@ const stateConfig = {
     nextState: 'REPAIR_IN_PROGRESS',
   },
   REPAIR_IN_PROGRESS: {
-    statusText: "Reparación en Curso",
+    statusText: "Intervención en Curso",
     statusColor: "bg-status-yellow",
     textColor: "text-white",
     statusIcon: Wrench,
-    mainText: "Técnico trabajando en la máquina. Pase su tarjeta para finalizar.",
+    mainText: "Personal de soporte trabajando. Pase su tarjeta para finalizar.",
     isPulsing: false,
     nextState: 'PENDING_OPERATOR_CONFIRMATION',
   },
@@ -100,7 +100,7 @@ const stateConfig = {
     statusColor: "bg-status-blue",
     textColor: "text-card-foreground",
     statusIcon: CheckCircle2,
-    mainText: "Técnico ha finalizado. Pase su tarjeta para confirmar",
+    mainText: "Soporte ha finalizado. Pase su tarjeta para confirmar",
     isPulsing: true,
     nextState: 'LOGGED_IN',
   },
@@ -224,7 +224,7 @@ export function Dashboard() {
                     } else if (state === 'AWAITING_SUPPORT') {
                         if (data.department === awaitingDepartment) {
                             setState('REPAIR_IN_PROGRESS');
-                            toast({ title: "Técnico ha llegado", description: `Técnico: ${data.name} de ${data.department}.` });
+                            toast({ title: "Personal de Soporte ha llegado", description: `${data.name} de ${data.department}.` });
                         } else {
                             toast({
                                 title: "Acceso Denegado",
@@ -232,9 +232,17 @@ export function Dashboard() {
                                 variant: "destructive"
                             });
                         }
-                    } else if (state === 'REPAIR_IN_PROGRESS' && data.department === 'Mantenimiento') {
-                        setState('PENDING_OPERATOR_CONFIRMATION');
-                        toast({ title: "Reparación Finalizada", description: `Pendiente de confirmación del operador. Técnico: ${data.name}` });
+                    } else if (state === 'REPAIR_IN_PROGRESS') {
+                        if (data.department === awaitingDepartment) {
+                            setState('PENDING_OPERATOR_CONFIRMATION');
+                            toast({ title: "Intervención Finalizada", description: `Pendiente de confirmación del operador. Personal: ${data.name}` });
+                        } else {
+                             toast({
+                                title: "Acción Inválida",
+                                description: `Se requiere que personal de ${awaitingDepartment} finalice la tarea.`,
+                                variant: "destructive"
+                            });
+                        }
                     }
                 } else {
                 console.warn("Mensaje de login recibido con formato incorrecto.");
@@ -344,15 +352,15 @@ export function Dashboard() {
         setOperator(userData);
         toast({ title: "Inicio de sesión exitoso", description: `${userData.department}: ${userData.name}` });
         if (userData.department === 'Mantenimiento') {
-        setState('REPAIR_IN_PROGRESS');
+            setState('REPAIR_IN_PROGRESS');
         } else { // Assume "Produccion" or other operator roles
-        setState('LOGGED_IN');
+            setState('LOGGED_IN');
         }
     };
 
     const handleConfirmationLogin = (operatorData: Operator) => {
         if (state === 'PENDING_OPERATOR_CONFIRMATION') {
-            if (operatorData.department !== 'Mantenimiento') {
+            if (operatorData.department !== 'Mantenimiento' && operatorData.department !== 'Calidad' && operatorData.department !== 'Suministros') {
                 setState('LOGGED_IN');
                 setDowntimeStartTime(null);
                 setAwaitingDepartment(null);
@@ -360,7 +368,7 @@ export function Dashboard() {
             } else {
                 toast({ 
                     title: "Confirmación Inválida", 
-                    description: "Se requiere la confirmación de un operador, no del técnico.",
+                    description: "Se requiere la confirmación de un operador, no del personal de soporte.",
                     variant: "destructive"
                 });
             }
@@ -591,6 +599,8 @@ export function Dashboard() {
         </>
     );
 }
+
+    
 
     
 
