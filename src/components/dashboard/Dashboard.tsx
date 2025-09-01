@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -155,10 +156,11 @@ export function Dashboard() {
         const savedState = localStorage.getItem('machineState');
         if (savedState) {
             try {
-                const { state: savedMachineState, operator: savedOperator } = JSON.parse(savedState);
+                const { state: savedMachineState, operator: savedOperator, awaitingDepartment: savedAwaitingDepartment } = JSON.parse(savedState);
                 if (savedMachineState && Object.keys(stateConfig).includes(savedMachineState)) {
                     setState(savedMachineState);
                     setOperator(savedOperator);
+                    setAwaitingDepartment(savedAwaitingDepartment);
                 }
             } catch(e) {
                 console.error("Could not parse machineState from localStorage", e)
@@ -177,34 +179,34 @@ export function Dashboard() {
         setClient(mqttClient);
 
         mqttClient.on('connect', () => {
-        console.log('Conectado al broker MQTT');
-        mqttClient.subscribe([LOGIN_TOPIC, MACHINE_STATE_TOPIC], (err) => {
-            if (!err) {
-            console.log(`Suscrito exitosamente a ${LOGIN_TOPIC} y ${MACHINE_STATE_TOPIC}`);
-            } else {
-            console.error('Error en la suscripción:', err);
-            }
-        });
+            console.log('Conectado al broker MQTT');
+            mqttClient.subscribe([LOGIN_TOPIC, MACHINE_STATE_TOPIC], (err) => {
+                if (!err) {
+                console.log(`Suscrito exitosamente a ${LOGIN_TOPIC} y ${MACHINE_STATE_TOPIC}`);
+                } else {
+                console.error('Error en la suscripción:', err);
+                }
+            });
         });
 
         mqttClient.on('error', (err) => {
-        console.error('Error de conexión MQTT:', err);
-        mqttClient.end();
+            console.error('Error de conexión MQTT:', err);
+            mqttClient.end();
         });
 
         return () => {
-        if (mqttClient) {
-            mqttClient.end();
-        }
+            if (mqttClient) {
+                mqttClient.end();
+            }
         };
     }, []);
 
     useEffect(() => {
         if (isComponentMounted) {
-            const dataToSave = JSON.stringify({ state, operator });
+            const dataToSave = JSON.stringify({ state, operator, awaitingDepartment });
             localStorage.setItem('machineState', dataToSave);
         }
-    }, [state, operator, isComponentMounted]);
+    }, [state, operator, isComponentMounted, awaitingDepartment]);
 
     useEffect(() => {
         if (!client) return;
@@ -215,17 +217,25 @@ export function Dashboard() {
             try {
                 const data = JSON.parse(message.toString());
                 if (data && data.name && data.shift && data.department) {
-                if (state === 'INACTIVE') {
-                    handleInitialLogin(data);
-                } else if (state === 'PENDING_OPERATOR_CONFIRMATION') {
-                    handleConfirmationLogin(data);
-                } else if (state === 'AWAITING_SUPPORT' && data.department === awaitingDepartment) {
-                    setState('REPAIR_IN_PROGRESS');
-                    toast({ title: "Técnico ha llegado", description: `Técnico: ${data.name} de ${data.department}.` });
-                } else if (state === 'REPAIR_IN_PROGRESS' && data.department === 'Mantenimiento') {
-                    setState('PENDING_OPERATOR_CONFIRMATION');
-                    toast({ title: "Reparación Finalizada", description: `Pendiente de confirmación del operador. Técnico: ${data.name}` });
-                }
+                    if (state === 'INACTIVE') {
+                        handleInitialLogin(data);
+                    } else if (state === 'PENDING_OPERATOR_CONFIRMATION') {
+                        handleConfirmationLogin(data);
+                    } else if (state === 'AWAITING_SUPPORT') {
+                        if (data.department === awaitingDepartment) {
+                            setState('REPAIR_IN_PROGRESS');
+                            toast({ title: "Técnico ha llegado", description: `Técnico: ${data.name} de ${data.department}.` });
+                        } else {
+                            toast({
+                                title: "Acceso Denegado",
+                                description: `Se requiere personal de ${awaitingDepartment}.`,
+                                variant: "destructive"
+                            });
+                        }
+                    } else if (state === 'REPAIR_IN_PROGRESS' && data.department === 'Mantenimiento') {
+                        setState('PENDING_OPERATOR_CONFIRMATION');
+                        toast({ title: "Reparación Finalizada", description: `Pendiente de confirmación del operador. Técnico: ${data.name}` });
+                    }
                 } else {
                 console.warn("Mensaje de login recibido con formato incorrecto.");
                 }
@@ -260,7 +270,8 @@ export function Dashboard() {
 
 
     useEffect(() => {
-        if (client && client.connected) {
+        if (!client || !client.connected) return;
+        
         const message = {
             state: state,
             statusText: stateConfig[state].statusText,
@@ -282,7 +293,7 @@ export function Dashboard() {
             console.log(`Interlock '${interlockValue}' publicado en ${INTERLOCK_TOPIC}`);
             }
         });
-        }
+        
     }, [state, client]);
 
 
@@ -344,6 +355,7 @@ export function Dashboard() {
             if (operatorData.department !== 'Mantenimiento') {
                 setState('LOGGED_IN');
                 setDowntimeStartTime(null);
+                setAwaitingDepartment(null);
                 toast({ title: "Fin de Paro Confirmado", description: "La máquina está lista para reiniciar producción." });
             } else {
                 toast({ 
@@ -355,7 +367,7 @@ export function Dashboard() {
         }
     };
 
-    const handleRegisterDowntime = (reason: DowntimeReason, category: Category) => {
+    const handleRegisterDowntime = (reason: DowntimeReason, category: DowntimeCategory) => {
         if (downtimeStartTime) {
         const duration = (Date.now() - downtimeStartTime) / 1000 / 60; // in minutes
         
@@ -405,6 +417,7 @@ export function Dashboard() {
         setOperator(null);
         setDowntimeStartTime(null);
         setIsModalOpen(false);
+        setAwaitingDepartment(null);
         toast({ title: "Sesión Cerrada" });
     };
 
@@ -438,6 +451,7 @@ export function Dashboard() {
                     <p className="font-semibold">{operator.department}: {operator.name}</p>
                     <p className="text-xs text-gray-400">Turno {operator.shift}</p>
                 </div>
+                <Button onClick={handleLogout} variant="destructive" size="sm">Cerrar Sesión</Button>
                 </div>
                 </>
             )}
