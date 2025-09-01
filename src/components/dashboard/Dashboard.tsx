@@ -119,6 +119,7 @@ const LOGIN_TOPIC = 'avery/station1/login';
 const STATUS_TOPIC = 'avery/station1/status';
 const INTERLOCK_TOPIC = 'avery/station1/interlock';
 const MACHINE_STATE_TOPIC = 'avery/station1/machine_state';
+const FAULT_REPORT_TOPIC = 'avery/station1/fault_report';
 
 
 export function Dashboard() {
@@ -333,10 +334,30 @@ export function Dashboard() {
     }
     
     setIsModalOpen(false);
-    
-    setAwaitingDepartment(category);
-    setState('AWAITING_SUPPORT');
-    toast({ title: "Paro Registrado", description: `Motivo: ${reason}. Se ha notificado a ${category}.` });
+
+    if (category === 'Operación') {
+        setState('LOGGED_IN');
+        setDowntimeStartTime(null);
+        toast({ title: "Paro de Operador Registrado", description: `Motivo: ${reason}. La máquina sigue lista.` });
+    } else {
+        if (client && client.connected) {
+            const message = {
+                reported_to: category,
+                timestamp: new Date().toISOString()
+            };
+            client.publish(FAULT_REPORT_TOPIC, JSON.stringify(message), (err) => {
+                if (err) {
+                    console.error('Error al publicar el reporte de falla:', err);
+                    toast({ title: "Error de Notificación", description: `No se pudo notificar a ${category}.`, variant: "destructive" });
+                } else {
+                    console.log(`Reporte de falla para '${category}' publicado en ${FAULT_REPORT_TOPIC}`);
+                    toast({ title: "Paro Registrado y Notificado", description: `Motivo: ${reason}. Se ha notificado a ${category}.` });
+                }
+            });
+        }
+        setAwaitingDepartment(category);
+        setState('AWAITING_SUPPORT');
+    }
   };
     
   const handleLogout = () => {
@@ -512,6 +533,8 @@ export function Dashboard() {
     </>
   );
 }
+
+    
 
     
 
