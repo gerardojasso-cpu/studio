@@ -124,21 +124,9 @@ const FAULT_REPORT_TOPIC = 'avery/station1/fault_report';
 
 
 export function Dashboard() {
-    const [state, setState] = useState<MachineState>(() => {
-        if (typeof window !== 'undefined') {
-            const savedState = localStorage.getItem('machineState');
-            return savedState ? JSON.parse(savedState).state : 'INACTIVE';
-        }
-        return 'INACTIVE';
-    });
-
-    const [operator, setOperator] = useState<Operator | null>(() => {
-        if (typeof window !== 'undefined') {
-            const savedState = localStorage.getItem('machineState');
-            return savedState ? JSON.parse(savedState).operator : null;
-        }
-        return null;
-    });
+    const [state, setState] = useState<MachineState>('INACTIVE');
+    const [operator, setOperator] = useState<Operator | null>(null);
+    const [isComponentMounted, setIsComponentMounted] = useState(false);
   
     const [kpis, setKpis] = useState({
         processedRolls: 9,
@@ -154,6 +142,16 @@ export function Dashboard() {
     const [client, setClient] = useState<MqttClient | null>(null);
 
     const { toast } = useToast();
+
+    useEffect(() => {
+        setIsComponentMounted(true);
+        const savedState = localStorage.getItem('machineState');
+        if (savedState) {
+            const { state: savedMachineState, operator: savedOperator } = JSON.parse(savedState);
+            setState(savedMachineState);
+            setOperator(savedOperator);
+        }
+    }, []);
   
     useEffect(() => {
         const options = {
@@ -188,11 +186,11 @@ export function Dashboard() {
     }, []);
 
     useEffect(() => {
-        if (typeof window !== 'undefined') {
+        if (isComponentMounted) {
             const dataToSave = JSON.stringify({ state, operator });
             localStorage.setItem('machineState', dataToSave);
         }
-    }, [state, operator]);
+    }, [state, operator, isComponentMounted]);
 
     useEffect(() => {
         if (!client) return;
@@ -395,6 +393,10 @@ export function Dashboard() {
         setIsModalOpen(false);
         toast({ title: "Sesión Cerrada" });
     };
+
+    if (!isComponentMounted) {
+        return null; // Or a loading spinner
+    }
 
     return (
         <>
