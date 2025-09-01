@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import mqtt, { MqttClient } from "mqtt";
+import mqtt, { MqttClient, IClientOptions } from "mqtt";
 import { 
   CheckCircle2, 
   AlertTriangle, 
@@ -170,10 +170,13 @@ export function Dashboard() {
     }, []);
   
     useEffect(() => {
-        const options = {
-        username: MQTT_USERNAME,
-        password: MQTT_PASSWORD,
-        };
+        const options: IClientOptions = {};
+        if (MQTT_USERNAME) {
+            options.username = MQTT_USERNAME;
+        }
+        if (MQTT_PASSWORD) {
+            options.password = MQTT_PASSWORD;
+        }
         
         const mqttClient = mqtt.connect(MQTT_BROKER_URL, options);
         setClient(mqttClient);
@@ -191,6 +194,11 @@ export function Dashboard() {
 
         mqttClient.on('error', (err) => {
             console.error('Error de conexión MQTT:', err);
+            toast({
+                title: "Error de Conexión MQTT",
+                description: err.message,
+                variant: "destructive",
+            });
             mqttClient.end();
         });
 
@@ -351,8 +359,9 @@ export function Dashboard() {
     const handleInitialLogin = (userData: Operator) => {
         setOperator(userData);
         toast({ title: "Inicio de sesión exitoso", description: `${userData.department}: ${userData.name}` });
-        if (userData.department === 'Mantenimiento') {
+        if (userData.department === 'Mantenimiento' || userData.department === 'Suministros' || userData.department === 'Calidad') {
             setState('REPAIR_IN_PROGRESS');
+            setAwaitingDepartment(userData.department)
         } else { // Assume "Produccion" or other operator roles
             setState('LOGGED_IN');
         }
@@ -599,6 +608,8 @@ export function Dashboard() {
         </>
     );
 }
+
+    
 
     
 
