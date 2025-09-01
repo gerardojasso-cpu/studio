@@ -112,9 +112,9 @@ const productionData = [
     { hour: "11:00", production: 580 },
 ]
 
-// Usamos un broker MQTT público para la demostración.
-// En un entorno real, deberías usar tu propio broker.
-const MQTT_BROKER_URL = 'wss://broker.emqx.io:8084/mqtt';
+// Usamos una variable de entorno para la URL del broker.
+// El valor por defecto es un broker local en el puerto 9001 (común para websockets).
+const MQTT_BROKER_URL = process.env.NEXT_PUBLIC_MQTT_BROKER_URL || 'ws://localhost:9001';
 const LOGIN_TOPIC = 'avery/station1/login';
 const STATUS_TOPIC = 'avery/station1/status';
 const INTERLOCK_TOPIC = 'avery/station1/interlock';
@@ -534,3 +534,5 @@ export function Dashboard() {
     </>
   );
 }
+
+    
