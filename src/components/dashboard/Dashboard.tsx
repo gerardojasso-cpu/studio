@@ -301,10 +301,17 @@ export function Dashboard() {
 
   const handleConfirmationLogin = (operatorData: Operator) => {
       if (state === 'PENDING_OPERATOR_CONFIRMATION') {
-        // Here we could validate if the user logging back in is the original operator, but for now we'll allow any.
-        setState('LOGGED_IN');
-        setDowntimeStartTime(null);
-        toast({ title: "Fin de Paro Confirmado", description: "La máquina está lista para reiniciar producción." });
+        if (operatorData.department !== 'Mantenimiento') {
+            setState('LOGGED_IN');
+            setDowntimeStartTime(null);
+            toast({ title: "Fin de Paro Confirmado", description: "La máquina está lista para reiniciar producción." });
+        } else {
+            toast({ 
+                title: "Confirmación Inválida", 
+                description: "Se requiere la confirmación de un operador, no del técnico.",
+                variant: "destructive"
+            });
+        }
     }
   };
 
@@ -505,6 +512,8 @@ export function Dashboard() {
     </>
   );
 }
+
+    
 
     
 
