@@ -43,6 +43,7 @@ const stateConfig = {
   INACTIVE: {
     statusText: "Inactiva",
     statusColor: "bg-status-gray",
+    textColor: "text-white",
     statusIcon: PowerOff,
     mainText: "Dashboard de Producción - Pase su tarjeta para iniciar sesión",
     isPulsing: false,
@@ -51,6 +52,7 @@ const stateConfig = {
   LOGGED_IN: {
     statusText: "Máquina Lista",
     statusColor: "bg-status-green",
+    textColor: "text-white",
     statusIcon: PlayCircle,
     mainText: "Sistema preparado para iniciar producción",
     isPulsing: true,
@@ -59,6 +61,7 @@ const stateConfig = {
   RUNNING: {
     statusText: "Funcionando",
     statusColor: "bg-status-green",
+    textColor: "text-white",
     statusIcon: Settings,
     mainText: "Producción Activa",
     isPulsing: false,
@@ -67,6 +70,7 @@ const stateConfig = {
   STOPPED: {
     statusText: "Parada",
     statusColor: "bg-primary",
+    textColor: "text-white",
     statusIcon: AlertTriangle,
     mainText: "Registro de Paro Requerido",
     isPulsing: true,
@@ -75,6 +79,7 @@ const stateConfig = {
   AWAITING_SUPPORT: {
     statusText: "Esperando Soporte",
     statusColor: "bg-status-orange",
+    textColor: "text-white",
     statusIcon: Clock,
     mainText: "Esperando respuesta del equipo de soporte.",
     isPulsing: true,
@@ -83,6 +88,7 @@ const stateConfig = {
   REPAIR_IN_PROGRESS: {
     statusText: "Reparación en Curso",
     statusColor: "bg-status-yellow",
+    textColor: "text-white",
     statusIcon: Wrench,
     mainText: "Técnico trabajando en la máquina. Pase su tarjeta para finalizar.",
     isPulsing: false,
@@ -91,6 +97,7 @@ const stateConfig = {
   PENDING_OPERATOR_CONFIRMATION: {
     statusText: "Solucionado, Pendiente de Operador",
     statusColor: "bg-status-blue",
+    textColor: "text-card-foreground",
     statusIcon: CheckCircle2,
     mainText: "Técnico ha finalizado. Pase su tarjeta para confirmar",
     isPulsing: true,
@@ -147,9 +154,16 @@ export function Dashboard() {
         setIsComponentMounted(true);
         const savedState = localStorage.getItem('machineState');
         if (savedState) {
-            const { state: savedMachineState, operator: savedOperator } = JSON.parse(savedState);
-            setState(savedMachineState);
-            setOperator(savedOperator);
+            try {
+                const { state: savedMachineState, operator: savedOperator } = JSON.parse(savedState);
+                if (savedMachineState && Object.keys(stateConfig).includes(savedMachineState)) {
+                    setState(savedMachineState);
+                    setOperator(savedOperator);
+                }
+            } catch(e) {
+                console.error("Could not parse machineState from localStorage", e)
+                localStorage.removeItem('machineState');
+            }
         }
     }, []);
   
@@ -341,7 +355,7 @@ export function Dashboard() {
         }
     };
 
-    const handleRegisterDowntime = (reason: DowntimeReason, category: DowntimeCategory) => {
+    const handleRegisterDowntime = (reason: DowntimeReason, category: Category) => {
         if (downtimeStartTime) {
         const duration = (Date.now() - downtimeStartTime) / 1000 / 60; // in minutes
         
@@ -441,8 +455,8 @@ export function Dashboard() {
                             currentConfig.statusColor,
                             currentConfig.isPulsing && 'soft-pulse'
                         )}>
-                            <currentConfig.statusIcon className="h-[45%] w-[45%] text-white" />
-                            <p className="font-bold text-4xl text-white mt-2 text-center">{currentConfig.statusText}</p>
+                            <currentConfig.statusIcon className={cn("h-[45%] w-[45%]", currentConfig.textColor)} />
+                            <p className={cn("font-bold text-4xl mt-2 text-center", currentConfig.textColor)}>{currentConfig.statusText}</p>
                         </div>
                     </div>
                     <p className="font-semibold text-lg tracking-widest uppercase mt-4 text-center">{currentConfig.mainText}</p>
@@ -563,3 +577,5 @@ export function Dashboard() {
         </>
     );
 }
+
+    
