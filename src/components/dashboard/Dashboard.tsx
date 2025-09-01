@@ -114,7 +114,10 @@ const productionData = [
 
 // Usamos una variable de entorno para la URL del broker.
 // El valor por defecto es un broker local en el puerto 9001 (común para websockets).
-const MQTT_BROKER_URL = process.env.NEXT_PUBLIC_MQTT_BROKER_URL || 'ws://localhost:9001';
+const MQTT_BROKER_URL = process.env.NEXT_PUBLIC_MQTT_BROKER_URL || 'ws://localhost:8083/mqtt';
+const MQTT_USERNAME = process.env.NEXT_PUBLIC_MQTT_USERNAME;
+const MQTT_PASSWORD = process.env.NEXT_PUBLIC_MQTT_PASSWORD;
+
 const LOGIN_TOPIC = 'avery/station1/login';
 const STATUS_TOPIC = 'avery/station1/status';
 const INTERLOCK_TOPIC = 'avery/station1/interlock';
@@ -141,7 +144,12 @@ export function Dashboard() {
   const { toast } = useToast();
   
   useEffect(() => {
-    const mqttClient = mqtt.connect(MQTT_BROKER_URL);
+    const options = {
+      username: MQTT_USERNAME,
+      password: MQTT_PASSWORD,
+    };
+    
+    const mqttClient = mqtt.connect(MQTT_BROKER_URL, options);
     setClient(mqttClient);
 
     mqttClient.on('connect', () => {
@@ -534,5 +542,7 @@ export function Dashboard() {
     </>
   );
 }
+
+    
 
     
