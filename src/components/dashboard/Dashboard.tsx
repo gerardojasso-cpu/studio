@@ -337,7 +337,6 @@ export function Dashboard() {
                 <p className="text-xs text-gray-400">Turno {operator.shift} - {operator.department}</p>
               </div>
             </div>
-            <div className="h-10 w-10 rounded-full bg-slate-300"/>
             </>
           )}
         </div>
