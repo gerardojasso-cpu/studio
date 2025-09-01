@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import mqtt from "mqtt";
+import mqtt, { MqttClient } from "mqtt";
 import { 
   CheckCircle2, 
   AlertTriangle, 
@@ -125,6 +125,7 @@ const productionData = [
 // En un entorno real, deberías usar tu propio broker.
 const MQTT_BROKER_URL = 'wss://broker.emqx.io:8084/mqtt';
 const LOGIN_TOPIC = 'avery/station1/login';
+const STATUS_TOPIC = 'avery/station1/status';
 
 export function Dashboard() {
   const [state, setState] = useState<MachineState>('INACTIVE');
@@ -140,15 +141,17 @@ export function Dashboard() {
   const [downtimeData, setDowntimeData] = useState(initialDowntimeData);
   const [downtimeStartTime, setDowntimeStartTime] = useState<number | null>(null);
   const [awaitingDepartment, setAwaitingDepartment] = useState<DowntimeCategory | null>(null);
+  const [client, setClient] = useState<MqttClient | null>(null);
 
   const { toast } = useToast();
   
   useEffect(() => {
-    const client = mqtt.connect(MQTT_BROKER_URL);
+    const mqttClient = mqtt.connect(MQTT_BROKER_URL);
+    setClient(mqttClient);
 
-    client.on('connect', () => {
+    mqttClient.on('connect', () => {
       console.log('Conectado al broker MQTT');
-      client.subscribe(LOGIN_TOPIC, (err) => {
+      mqttClient.subscribe(LOGIN_TOPIC, (err) => {
         if (!err) {
           console.log(`Suscrito exitosamente a ${LOGIN_TOPIC}`);
         } else {
@@ -157,12 +160,11 @@ export function Dashboard() {
       });
     });
 
-    client.on('message', (topic, message) => {
+    mqttClient.on('message', (topic, message) => {
       console.log(`Mensaje recibido en ${topic}:`, message.toString());
       if (topic === LOGIN_TOPIC) {
         try {
           const data = JSON.parse(message.toString());
-          // Validamos que el mensaje tenga el formato esperado
           if (data && data.name && data.shift && data.department) {
             handleLogin(data);
           } else {
@@ -174,17 +176,35 @@ export function Dashboard() {
       }
     });
 
-    client.on('error', (err) => {
+    mqttClient.on('error', (err) => {
       console.error('Error de conexión MQTT:', err);
-      client.end();
+      mqttClient.end();
     });
 
     return () => {
-      if (client) {
-        client.end();
+      if (mqttClient) {
+        mqttClient.end();
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (client && client.connected) {
+      const message = {
+        state: state,
+        statusText: stateConfig[state].statusText,
+        timestamp: new Date().toISOString(),
+      };
+      client.publish(STATUS_TOPIC, JSON.stringify(message), (err) => {
+        if (err) {
+          console.error('Error al publicar estado:', err);
+        } else {
+          console.log(`Estado '${state}' publicado en ${STATUS_TOPIC}`);
+        }
+      });
+    }
+  }, [state, client]);
+
 
   let currentConfig = stateConfig[state];
 
@@ -331,7 +351,6 @@ export function Dashboard() {
           {state !== 'INACTIVE' && operator && (
             <>
             <div className="text-right flex items-center gap-3">
-              <User className="h-5 w-5"/>
               <div>
                 <p className="font-semibold">Operador: {operator.name}</p>
                 <p className="text-xs text-gray-400">Turno {operator.shift} - {operator.department}</p>
@@ -500,3 +519,5 @@ export function Dashboard() {
     </>
   );
 }
+
+    
