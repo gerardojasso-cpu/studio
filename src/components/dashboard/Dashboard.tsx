@@ -37,6 +37,7 @@ type MachineState = 'INACTIVE' | 'LOGGED_IN' | 'RUNNING' | 'STOPPED' | 'AWAITING
 interface Operator {
   name: string;
   shift: string;
+  department: string;
 }
 
 const stateConfig = {
@@ -162,7 +163,7 @@ export function Dashboard() {
         try {
           const data = JSON.parse(message.toString());
           // Validamos que el mensaje tenga el formato esperado
-          if (data && data.name && data.shift) {
+          if (data && data.name && data.shift && data.department) {
             handleLogin(data);
           } else {
              console.warn("Mensaje de login recibido con formato incorrecto.");
@@ -333,7 +334,7 @@ export function Dashboard() {
               <User className="h-5 w-5"/>
               <div>
                 <p className="font-semibold">Operador: {operator.name}</p>
-                <p className="text-xs text-gray-400">Turno {operator.shift}</p>
+                <p className="text-xs text-gray-400">Turno {operator.shift} - {operator.department}</p>
               </div>
             </div>
             <div className="h-10 w-10 rounded-full bg-slate-300"/>
