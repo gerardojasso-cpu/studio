@@ -235,7 +235,7 @@ export function Dashboard() {
         }
       });
 
-      const interlockValue = (state === 'LOGGED_IN' || state === 'REPAIR_IN_PROGRESS') ? '1' : '0';
+      const interlockValue = (state === 'LOGGED_IN' || state === 'REPAIR_IN_PROGRESS' || state === 'RUNNING') ? '1' : '0';
       client.publish(INTERLOCK_TOPIC, interlockValue, (err) => {
         if (err) {
           console.error('Error al publicar interlock:', err);
@@ -533,11 +533,3 @@ export function Dashboard() {
     </>
   );
 }
-
-    
-
-    
-
-    
-
-    
