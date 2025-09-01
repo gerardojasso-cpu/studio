@@ -118,6 +118,7 @@ const MQTT_BROKER_URL = 'wss://broker.emqx.io:8084/mqtt';
 const LOGIN_TOPIC = 'avery/station1/login';
 const STATUS_TOPIC = 'avery/station1/status';
 const INTERLOCK_TOPIC = 'avery/station1/interlock';
+const MACHINE_STATE_TOPIC = 'avery/station1/machine_state';
 
 
 export function Dashboard() {
@@ -144,9 +145,9 @@ export function Dashboard() {
 
     mqttClient.on('connect', () => {
       console.log('Conectado al broker MQTT');
-      mqttClient.subscribe(LOGIN_TOPIC, (err) => {
+      mqttClient.subscribe([LOGIN_TOPIC, MACHINE_STATE_TOPIC], (err) => {
         if (!err) {
-          console.log(`Suscrito exitosamente a ${LOGIN_TOPIC}`);
+          console.log(`Suscrito exitosamente a ${LOGIN_TOPIC} y ${MACHINE_STATE_TOPIC}`);
         } else {
           console.error('Error en la suscripción:', err);
         }
@@ -163,7 +164,7 @@ export function Dashboard() {
         mqttClient.end();
       }
     };
-  }, []); // <-- Dependencias eliminadas para conectar solo una vez
+  }, []);
 
   useEffect(() => {
     if (!client) return;
@@ -188,6 +189,21 @@ export function Dashboard() {
           } catch (error) {
             console.error("Error al parsear el mensaje JSON:", error);
           }
+        } else if (topic === MACHINE_STATE_TOPIC) {
+            try {
+                const data = JSON.parse(message.toString());
+                if(data.status === 'running' && (state === 'LOGGED_IN' || state === 'STOPPED')) {
+                    setState('RUNNING');
+                    setDowntimeStartTime(null);
+                    toast({ title: "Producción Iniciada", description: "La máquina ha comenzado a funcionar." });
+                } else if (data.status === 'stopped' && state === 'RUNNING') {
+                    setState('STOPPED');
+                    setDowntimeStartTime(Date.now());
+                    setTimeout(() => setIsModalOpen(true), 500);
+                }
+            } catch(error) {
+                console.error("Error al parsear el mensaje de estado de la máquina:", error);
+            }
         }
     };
     
@@ -197,7 +213,7 @@ export function Dashboard() {
         client.off('message', handleMessage);
     };
 
-  }, [client, state, awaitingDepartment]); // Dependencias necesarias para la lógica del mensaje
+  }, [client, state, awaitingDepartment]);
 
 
   useEffect(() => {
@@ -290,15 +306,7 @@ export function Dashboard() {
   };
 
   const handleStateAction = () => {
-    if (state === 'LOGGED_IN') {
-      setState('RUNNING');
-      setDowntimeStartTime(null);
-      toast({ title: "Producción Iniciada", description: "La máquina ha comenzado a funcionar." });
-    } else if (state === 'RUNNING') {
-      setState('STOPPED');
-      setDowntimeStartTime(Date.now());
-      setTimeout(() => setIsModalOpen(true), 500);
-    } else if (state === 'REPAIR_IN_PROGRESS') {
+    if (state === 'REPAIR_IN_PROGRESS') {
         setState('PENDING_OPERATOR_CONFIRMATION');
         toast({ title: "Reparación Finalizada", description: "Pendiente de confirmación del operador." });
     }
@@ -400,22 +408,10 @@ export function Dashboard() {
                     {state === 'RUNNING' ? 'Máquina En Funcionamiento' : 'Máquina Detenida'}
                   </p>
                   <p className="text-sm text-card-foreground/80">
-                    {state === 'RUNNING' ? 'Producción activa en curso' : 'Esperando acción del operador'}
+                    {state === 'RUNNING' ? 'Producción activa en curso' : 'Esperando acción del operador o de la máquina'}
                   </p>
                 </div>
 
-                {state === 'LOGGED_IN' && operator?.department !== 'Mantenimiento' && (
-                  <Button onClick={handleStateAction} className="w-full font-bold bg-status-green hover:bg-status-green/90">
-                    <PlayCircle className="mr-2 h-5 w-5" />
-                    Iniciar Producción
-                  </Button>
-                )}
-                {state === 'RUNNING' && (
-                  <Button onClick={handleStateAction} className="w-full font-bold bg-primary hover:bg-primary/90">
-                    <Square className="mr-2 h-5 w-5" />
-                    Detener Máquina
-                  </Button>
-                )}
                 {state === 'REPAIR_IN_PROGRESS' && (
                   <Button onClick={handleStateAction} className="w-full font-bold bg-status-yellow hover:bg-status-yellow/90">
                     <Wrench className="mr-2 h-5 w-5" />
@@ -520,7 +516,5 @@ export function Dashboard() {
     </>
   );
 }
-
-    
 
     
