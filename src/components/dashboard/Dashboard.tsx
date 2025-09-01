@@ -343,6 +343,7 @@ export function Dashboard() {
         if (client && client.connected) {
             const message = {
                 reported_to: category,
+                reason: reason,
                 timestamp: new Date().toISOString()
             };
             client.publish(FAULT_REPORT_TOPIC, JSON.stringify(message), (err) => {
