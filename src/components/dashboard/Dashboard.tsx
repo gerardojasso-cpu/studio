@@ -153,29 +153,6 @@ export function Dashboard() {
       });
     });
 
-    mqttClient.on('message', (topic, message) => {
-      console.log(`Mensaje recibido en ${topic}:`, message.toString());
-      if (topic === LOGIN_TOPIC) {
-        try {
-          const data = JSON.parse(message.toString());
-          if (data && data.name && data.shift && data.department) {
-             if (state === 'INACTIVE') {
-               handleInitialLogin(data);
-             } else if (state === 'PENDING_OPERATOR_CONFIRMATION') {
-               handleLogin(data);
-             } else if (state === 'AWAITING_SUPPORT' && data.department === awaitingDepartment) {
-               setState('REPAIR_IN_PROGRESS');
-               toast({ title: "Técnico ha llegado", description: `Técnico: ${data.name} de ${data.department}.` });
-            }
-          } else {
-             console.warn("Mensaje de login recibido con formato incorrecto.");
-          }
-        } catch (error) {
-          console.error("Error al parsear el mensaje JSON:", error);
-        }
-      }
-    });
-
     mqttClient.on('error', (err) => {
       console.error('Error de conexión MQTT:', err);
       mqttClient.end();
@@ -186,7 +163,42 @@ export function Dashboard() {
         mqttClient.end();
       }
     };
-  }, [state, awaitingDepartment]);
+  }, []); // <-- Dependencias eliminadas para conectar solo una vez
+
+  useEffect(() => {
+    if (!client) return;
+
+    const handleMessage = (topic: string, message: Buffer) => {
+        console.log(`Mensaje recibido en ${topic}:`, message.toString());
+        if (topic === LOGIN_TOPIC) {
+          try {
+            const data = JSON.parse(message.toString());
+            if (data && data.name && data.shift && data.department) {
+               if (state === 'INACTIVE') {
+                 handleInitialLogin(data);
+               } else if (state === 'PENDING_OPERATOR_CONFIRMATION') {
+                 handleLogin(data);
+               } else if (state === 'AWAITING_SUPPORT' && data.department === awaitingDepartment) {
+                 setState('REPAIR_IN_PROGRESS');
+                 toast({ title: "Técnico ha llegado", description: `Técnico: ${data.name} de ${data.department}.` });
+              }
+            } else {
+               console.warn("Mensaje de login recibido con formato incorrecto.");
+            }
+          } catch (error) {
+            console.error("Error al parsear el mensaje JSON:", error);
+          }
+        }
+    };
+    
+    client.on('message', handleMessage);
+
+    return () => {
+        client.off('message', handleMessage);
+    };
+
+  }, [client, state, awaitingDepartment]); // Dependencias necesarias para la lógica del mensaje
+
 
   useEffect(() => {
     if (client && client.connected) {
@@ -508,5 +520,7 @@ export function Dashboard() {
     </>
   );
 }
+
+    
 
     
