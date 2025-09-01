@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import mqtt from "mqtt";
 import { 
   CheckCircle2, 
   AlertTriangle, 
@@ -32,6 +33,11 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } fro
 import { ChartContainer } from "@/components/ui/chart";
 
 type MachineState = 'INACTIVE' | 'LOGGED_IN' | 'RUNNING' | 'STOPPED' | 'AWAITING_SUPPORT' | 'REPAIR_IN_PROGRESS' | 'PENDING_OPERATOR_CONFIRMATION' | 'PENDING_OPERATOR_ACTION';
+
+interface Operator {
+  name: string;
+  shift: string;
+}
 
 const stateConfig = {
   INACTIVE: {
@@ -114,8 +120,14 @@ const productionData = [
     { hour: "11:00", production: 580 },
 ]
 
+// Usamos un broker MQTT público para la demostración.
+// En un entorno real, deberías usar tu propio broker.
+const MQTT_BROKER_URL = 'wss://broker.emqx.io:8084/mqtt';
+const LOGIN_TOPIC = 'avery/station1/login';
+
 export function Dashboard() {
   const [state, setState] = useState<MachineState>('INACTIVE');
+  const [operator, setOperator] = useState<Operator | null>(null);
   const [kpis, setKpis] = useState({
     processedRolls: 9,
     efficiency: 85.8,
@@ -130,6 +142,49 @@ export function Dashboard() {
 
   const { toast } = useToast();
   
+  useEffect(() => {
+    const client = mqtt.connect(MQTT_BROKER_URL);
+
+    client.on('connect', () => {
+      console.log('Conectado al broker MQTT');
+      client.subscribe(LOGIN_TOPIC, (err) => {
+        if (!err) {
+          console.log(`Suscrito exitosamente a ${LOGIN_TOPIC}`);
+        } else {
+          console.error('Error en la suscripción:', err);
+        }
+      });
+    });
+
+    client.on('message', (topic, message) => {
+      console.log(`Mensaje recibido en ${topic}:`, message.toString());
+      if (topic === LOGIN_TOPIC) {
+        try {
+          const data = JSON.parse(message.toString());
+          // Validamos que el mensaje tenga el formato esperado
+          if (data && data.name && data.shift) {
+            handleLogin(data);
+          } else {
+             console.warn("Mensaje de login recibido con formato incorrecto.");
+          }
+        } catch (error) {
+          console.error("Error al parsear el mensaje JSON:", error);
+        }
+      }
+    });
+
+    client.on('error', (err) => {
+      console.error('Error de conexión MQTT:', err);
+      client.end();
+    });
+
+    return () => {
+      if (client) {
+        client.end();
+      }
+    };
+  }, []);
+
   let currentConfig = stateConfig[state];
 
   // Dynamic mainText for AWAITING_SUPPORT state
@@ -174,11 +229,16 @@ export function Dashboard() {
   }, [state, downtimeStartTime]);
 
 
-  const handleStateAction = () => {
+  const handleLogin = (operatorData: Operator) => {
     if (state === 'INACTIVE') {
+      setOperator(operatorData);
       setState('LOGGED_IN');
-      toast({ title: "Inicio de sesión exitoso", description: "Operador: Juan Pérez" });
-    } else if (state === 'LOGGED_IN') {
+      toast({ title: "Inicio de sesión exitoso", description: `Operador: ${operatorData.name}` });
+    }
+  };
+
+  const handleStateAction = () => {
+    if (state === 'LOGGED_IN') {
       setState('RUNNING');
       setDowntimeStartTime(null);
       toast({ title: "Producción Iniciada", description: "La máquina ha comenzado a funcionar." });
@@ -224,6 +284,7 @@ export function Dashboard() {
 
     if (reason === 'Fin de Turno') {
       setState('INACTIVE');
+      setOperator(null);
       toast({ title: "Fin de turno registrado", description: "Sesión cerrada." });
       return;
     }
@@ -241,6 +302,7 @@ export function Dashboard() {
     
   const handleLogout = () => {
     setState('INACTIVE');
+    setOperator(null);
     setDowntimeStartTime(null);
     setIsModalOpen(false);
     toast({ title: "Sesión Cerrada" });
@@ -265,13 +327,13 @@ export function Dashboard() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          {state !== 'INACTIVE' && (
+          {state !== 'INACTIVE' && operator && (
             <>
             <div className="text-right flex items-center gap-3">
               <User className="h-5 w-5"/>
               <div>
-                <p className="font-semibold">Operador: Juan Pérez</p>
-                <p className="text-xs text-gray-400">Turno 1 - 06:00 AM</p>
+                <p className="font-semibold">Operador: {operator.name}</p>
+                <p className="text-xs text-gray-400">Turno {operator.shift}</p>
               </div>
             </div>
             <div className="h-10 w-10 rounded-full bg-slate-300"/>
@@ -284,7 +346,7 @@ export function Dashboard() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Columna Izquierda */}
           <div className="lg:col-span-1 flex flex-col gap-6">
-            <div className="flex flex-col flex-grow items-center justify-center text-center cursor-pointer p-4" onClick={handleStateAction}>
+            <div className="flex flex-col flex-grow items-center justify-center text-center p-4">
                 <div className="w-full max-w-sm aspect-square flex items-center justify-center">
                     <div className={cn(
                         "flex flex-col h-full w-full items-center justify-center rounded-full transition-colors", 
@@ -301,7 +363,7 @@ export function Dashboard() {
             { state !== 'INACTIVE' &&
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base text-muted-foreground">
+                <CardTitle className="flex items-center gap-2 text-base text-card-foreground/80">
                   <PlayCircle className="h-5 w-5" />
                   Control de Máquina
                 </CardTitle>
@@ -311,7 +373,7 @@ export function Dashboard() {
                   <p className="font-bold text-lg">
                     {state === 'RUNNING' ? 'Máquina En Funcionamiento' : 'Máquina Detenida'}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-card-foreground/80">
                     {state === 'RUNNING' ? 'Producción activa en curso' : 'Esperando acción del operador'}
                   </p>
                 </div>
